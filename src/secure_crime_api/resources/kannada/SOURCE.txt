@@ -1,0 +1,18 @@
+Kannada Hunspell dictionary resource
+
+Source:
+https://github.com/LibreOffice/dictionaries/tree/master/kn_IN
+
+Downloaded files:
+- kn_IN.dic
+- kn_IN.aff
+- README-kn_IN.txt
+
+Origin noted by upstream README:
+Kannada Spell Checker by Harisha M G, from kannada_spell_checker-2.0.1.2resigned1.xpi.
+
+License:
+The upstream README states the Kannada word list package is free software under the GNU General Public License, version 2 or later. Keep this notice with redistributed dictionary files.
+
+Usage in this app:
+The files are parsed locally for Kannada query token recognition and spelling normalization. They are not used as crime facts, evidence, or external knowledge for case answers.
