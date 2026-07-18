@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     bootstrap_full_name: str = "Bootstrap Administrator"
     bootstrap_role: str = "super_admin"
     bootstrap_district: str = "state"
+    demo_mode: bool = False
+    demo_password: str = "admin123"
 
     @field_validator("jwt_secret")
     @classmethod

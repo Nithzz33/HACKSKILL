@@ -2,6 +2,8 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
+ENV PORT=8000
 
 WORKDIR /app
 
@@ -17,4 +19,4 @@ RUN mkdir -p /app/data && chown -R app:app /app
 USER app
 
 EXPOSE 8000
-CMD ["uvicorn", "secure_crime_api.app:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "secure_crime_api.catalyst_entry"]

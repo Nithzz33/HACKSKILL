@@ -1,4 +1,6 @@
-# Secure Crime Intelligence API
+# HACKSKILL
+
+## Secure Crime Intelligence API
 
 This repository contains a secure backend foundation for a crime analytics and conversational intelligence platform. It focuses on the security control plane first: authentication, authorization, auditability, PII handling, official-data ingestion, and safe API defaults.
 
@@ -76,6 +78,31 @@ Open:
 - Health check: http://127.0.0.1:8000/health
 
 Remove the bootstrap credentials from `.env` after the first account is created.
+
+## Zoho Catalyst AppSail Hosting
+
+This repository is ready to host as a Zoho Catalyst AppSail service. The deployed app serves the FastAPI backend and the static frontend from one process.
+
+- AppSail entrypoint: [catalyst_app.py](C:/Users/saini/OneDrive/Documents/ksp/catalyst_app.py)
+- Deployment guide: [deploy/zoho-catalyst/README.md](C:/Users/saini/OneDrive/Documents/ksp/deploy/zoho-catalyst/README.md)
+- Example managed-runtime config: [deploy/zoho-catalyst/app-config.managed.example.json](C:/Users/saini/OneDrive/Documents/ksp/deploy/zoho-catalyst/app-config.managed.example.json)
+
+For a hackathon demo, set:
+
+```text
+SECURE_API_DEMO_MODE=true
+SECURE_API_DEMO_PASSWORD=admin123
+```
+
+That seeds evaluator accounts and demo/template FIR, analytics, and money-trail records into a clean database. Use `superadmin` / `admin123` to demonstrate all modules.
+
+Build the Catalyst managed-runtime bundle with:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\build_catalyst_appsail.py
+```
+
+If native Python wheels cause deployment issues, use the Dockerfile as an AppSail custom runtime image.
 
 ## Official Data
 

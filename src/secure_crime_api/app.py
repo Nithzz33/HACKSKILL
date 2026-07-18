@@ -42,6 +42,7 @@ from secure_crime_api.audit import verify_audit_chain, write_audit_log
 from secure_crime_api.config import Settings, get_settings
 from secure_crime_api.crime_data_import import import_crime_csv
 from secure_crime_api.crime_ml import advanced_crime_analytics
+from secure_crime_api.demo_data import seed_demo_data
 from secure_crime_api.kannada_lexicon import dictionary_status, normalize_kannada_query
 from secure_crime_api.intent_taxonomy import classify_master_intent, taxonomy_status
 from secure_crime_api.nlp_intelligence import answer_incident_intelligence_query
@@ -88,6 +89,9 @@ from secure_crime_api.models import (
     PasswordResetRequest,
     PatternAnalyticsResponse,
     UserPublic,
+    PenalCodeRecord,
+    CrimeLogCreate,
+    CrimeLogRecord,
 )
 from secure_crime_api.pdf_export import render_conversation_pdf
 from secure_crime_api.platform_modules import (
@@ -1667,6 +1671,7 @@ def answer_money_trail_question(
     else:
         lines = [
             f"### 💸 Money Trail Analysis — {target}",
+            f"Money trail for {target}.",
             f"\n**{len(transactions)} accessible transaction(s) identified.**\n",
         ]
         for index, tx in enumerate(transactions[:10], 1):
@@ -4081,6 +4086,9 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
 
     db = database or Database(Path(settings.database_path))
     db.init_schema()
+    db.seed_penal_codes_if_empty()
+    if settings.demo_mode:
+        seed_demo_data(db, demo_password=settings.demo_password)
     if settings.bootstrap_username and settings.bootstrap_password:
         db.bootstrap_user_if_empty(
             UserCreate(
@@ -5752,6 +5760,42 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
     ) -> dict:
         _ = user
         return verify_audit_chain(db)
+
+    @app.get("/penal-codes", response_model=list[PenalCodeRecord], tags=["reference"])
+    def list_penal_codes(
+        user: Annotated[AuthenticatedUser, Depends(require_permission("case:read"))],
+        db: Annotated[Database, Depends(get_db)],
+    ) -> list[dict]:
+        _ = user
+        return db.list_penal_codes()
+
+    @app.post("/crime-logs", response_model=CrimeLogRecord, tags=["cases"])
+    def create_crime_log(
+        payload: CrimeLogCreate,
+        request: Request,
+        user: Annotated[AuthenticatedUser, Depends(require_permission("case:write"))],
+        db: Annotated[Database, Depends(get_db)],
+    ) -> dict:
+        log = db.create_crime_log(payload.model_dump(), user.id)
+        write_audit_log(
+            db,
+            action="CRIME_LOG_CREATE",
+            resource_type="crime_log",
+            resource_id=log["id"],
+            status="SUCCESS",
+            request=request,
+            user=user,
+        )
+        return log
+
+    @app.get("/crime-logs", response_model=list[CrimeLogRecord], tags=["cases"])
+    def list_crime_logs(
+        user: Annotated[AuthenticatedUser, Depends(require_permission("case:read"))],
+        db: Annotated[Database, Depends(get_db)],
+        limit: int = 100,
+    ) -> list[dict]:
+        _ = user
+        return db.list_crime_logs(limit)
 
     return app
 

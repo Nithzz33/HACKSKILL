@@ -77,7 +77,13 @@ def network_graph(
             masked["suspect_name"],
             "suspect",
             case,
-            {"suspect_name": masked["suspect_name"], "cases": [case_ref]},
+            {
+                "suspect_name": masked["suspect_name"],
+                "age": case.get("suspect_age"),
+                "gender": case.get("suspect_gender"),
+                "aadhaar_number": case.get("suspect_aadhaar"),
+                "cases": [case_ref],
+            },
         )
         _upsert_node(
             nodes,

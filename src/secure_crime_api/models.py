@@ -549,3 +549,35 @@ class AdvancedCrimeAnalyticsResponse(BaseModel):
     network: NetworkGraph
     data_quality: list[str]
     safeguards: list[str]
+
+
+class PenalCodeRecord(BaseModel):
+    id: str
+    code_type: str = Field(description="E.g., BNS, IPC, CRPC")
+    section: str = Field(description="Section number, e.g., 115(2)")
+    description: str = Field(description="Description of the penal code section")
+    punishment: str | None = None
+
+
+class CrimeLogCreate(BaseModel):
+    crime_type: str = Field(min_length=1, max_length=120)
+    accused_name: str = Field(min_length=1, max_length=120)
+    accused_aadhaar: str | None = Field(default=None, max_length=12)
+    accused_age: int | None = Field(default=None, ge=0, le=120)
+    accused_gender: str | None = Field(default=None, max_length=40)
+    witness_a1: str | None = Field(default=None, max_length=120)
+    witness_a2: str | None = Field(default=None, max_length=120)
+    witness_a3: str | None = Field(default=None, max_length=120)
+    witness_a4: str | None = Field(default=None, max_length=120)
+    witness_a5: str | None = Field(default=None, max_length=120)
+    prosecutor_name: str | None = Field(default=None, max_length=120)
+    defense_lawyer_name: str | None = Field(default=None, max_length=120)
+    bail_type: str | None = Field(default=None, max_length=120)
+    bail_surety_name: str | None = Field(default=None, max_length=120)
+    charge_sheet_sections: list[str] = Field(default_factory=list)
+
+
+class CrimeLogRecord(CrimeLogCreate):
+    id: str
+    logged_by: str
+    created_at: datetime

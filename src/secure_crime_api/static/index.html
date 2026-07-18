@@ -124,6 +124,23 @@
           </button>
           <p class="form-error" id="loginError" role="alert"></p>
           <p class="setup-note" data-i18n="setupNote">Use an authorized account provisioned by your administrator.</p>
+          <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <strong style="display: block; margin-bottom: 0.5rem; color: var(--text-primary);">Evaluator Credentials (Password: admin123):</strong>
+            <ul style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; color: var(--text-secondary);">
+              <li><button type="button" class="evaluator-login-btn" data-username="superadmin" data-password="admin123" style="width: 100%; text-align: left; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">superadmin</button></li>
+              <li><button type="button" class="evaluator-login-btn" data-username="supervisor" data-password="admin123" style="width: 100%; text-align: left; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">supervisor</button></li>
+              <li><button type="button" class="evaluator-login-btn" data-username="investigator" data-password="admin123" style="width: 100%; text-align: left; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">investigator</button></li>
+              <li><button type="button" class="evaluator-login-btn" data-username="analyst" data-password="admin123" style="width: 100%; text-align: left; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">analyst</button></li>
+              <li><button type="button" class="evaluator-login-btn" data-username="policymaker" data-password="admin123" style="width: 100%; text-align: left; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">policymaker</button></li>
+              <li><button type="button" class="evaluator-login-btn" data-username="viewer" data-password="admin123" style="width: 100%; text-align: left; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">viewer</button></li>
+              <li style="grid-column: span 2; margin-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.5rem;">
+                <button type="button" class="evaluator-login-btn" data-username="admin" data-password="SecureAdminPassword123!" style="width: 100%; text-align: left; padding: 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: var(--text-primary); cursor: pointer;">
+                  <strong>Bootstrap Admin</strong><br>
+                  <span style="font-size: 0.8em; color: var(--text-secondary);">U: admin | P: SecureAdminPassword123!</span>
+                </button>
+              </li>
+            </ul>
+          </div>
         </form>
       </section>
 
@@ -146,16 +163,20 @@
           <nav class="nav-list" aria-label="Main navigation">
             <span class="visually-hidden" data-panel="framework">Framework module available inside AI Assistant</span>
             <span class="visually-hidden" data-panel="sna">SNA module available inside Networks</span>
-            <button class="nav-item" data-panel="overview"><i data-lucide="home"></i><span class="nav-label">Home</span></button>
-            <button class="nav-item" data-panel="cases"><i data-lucide="folder-open"></i><span class="nav-label">Cases</span><span class="nav-badge" id="navBadgeCases">0</span></button>
-            <button class="nav-item is-active" data-panel="command"><i data-lucide="bot"></i><span class="nav-label">AI Assistant</span><span class="nav-badge">AI</span></button>
-            <button class="nav-item" data-panel="analytics"><i data-lucide="bar-chart-3"></i><span class="nav-label">Analytics</span><span class="nav-badge" id="navBadgeAnalytics">0</span></button>
-            <button class="nav-item" data-panel="network"><i data-lucide="network"></i><span class="nav-label">Networks</span><span class="nav-badge" id="navBadgeNetwork">0</span></button>
-            <button class="nav-item" data-panel="financial"><i data-lucide="indian-rupee"></i><span class="nav-label">Financial</span><span class="nav-badge" id="navBadgeFinancial">0</span></button>
-            <button class="nav-item" data-panel="map"><i data-lucide="map"></i><span class="nav-label">Geospatial</span><span class="nav-badge">GIS</span></button>
-            <button class="nav-item" data-panel="support"><i data-lucide="search"></i><span class="nav-label">Investigations</span><span class="nav-badge">DS</span></button>
-            <button class="nav-item" data-panel="audit"><i data-lucide="scroll-text"></i><span class="nav-label">Audit</span><span class="nav-badge" id="navBadgeAudit">on</span></button>
-            <button class="nav-item" data-panel="admin"><i data-lucide="settings"></i><span class="nav-label">Administration</span></button>
+            
+            <button class="nav-item is-active" data-panel="command" title="Module 1 · Conversational Crime Intelligence"><i data-lucide="bot"></i><span class="nav-label">Module 1: AI Assistant</span><span class="nav-badge">AI</span></button>
+            <button class="nav-item" data-panel="network" title="Module 2 · Criminal Network Analysis"><i data-lucide="network"></i><span class="nav-label">Module 2: Networks</span><span class="nav-badge" id="navBadgeNetwork">0</span></button>
+            <button class="nav-item" data-panel="patterns" title="Module 3 · Crime Pattern Discovery"><i data-lucide="radar"></i><span class="nav-label">Module 3: Patterns</span></button>
+            <button class="nav-item" data-panel="analytics" title="Module 4 · Sociological Crime Insights"><i data-lucide="landmark"></i><span class="nav-label">Module 4: Sociological</span></button>
+            <button class="nav-item" data-panel="profiling" title="Module 5 · Criminology-Based Offender Profiling"><i data-lucide="user-search"></i><span class="nav-label">Module 5: Profiling</span></button>
+            <button class="nav-item" data-panel="support" title="Module 6 · Investigator Decision Support"><i data-lucide="folder-open"></i><span class="nav-label">Module 6: Investigations</span></button>
+            <button class="nav-item" data-panel="financial" title="Module 7 · Financial Crime Link Analysis"><i data-lucide="indian-rupee"></i><span class="nav-label">Module 7: Financial</span></button>
+            <button class="nav-item" data-panel="overview" title="Module 8 · Crime Forecasting & Early Warning"><i data-lucide="map-pinned"></i><span class="nav-label">Module 8: Forecasting</span></button>
+            <button class="nav-item audit-only is-hidden" data-panel="audit" title="Module 9 · Explainable AI & Audit"><i data-lucide="scroll-text"></i><span class="nav-label">Module 9: Audit</span></button>
+            <button class="nav-item admin-only is-hidden" data-panel="admin" title="Module 10 · Secure Role-Based Access"><i data-lucide="settings"></i><span class="nav-label">Module 10: Admin</span></button>
+            <button class="nav-item" data-panel="crime_dashboard" title="District Crime Dashboard"><i data-lucide="chart-no-axes-combined"></i><span class="nav-label">Crime Dashboard</span></button>
+            <button class="nav-item" data-panel="map" title="Geospatial Drill-down"><i data-lucide="map"></i><span class="nav-label">GIS Mapping</span></button>
+            <button class="nav-item" data-panel="log_crime" title="Log a new incident"><i data-lucide="edit"></i><span class="nav-label">Log Crime</span></button>
           </nav>
           <button class="ghost-action" id="logoutBtn"><i data-lucide="log-out"></i><span data-i18n="logout">Logout</span></button>
         </aside>
@@ -224,27 +245,56 @@
           </section>
 
           <section class="panel" id="overview">
+            <!-- Module 8: Crime Forecasting & Early Warning - Command Center KPIs -->
+            <div class="overview-command-header">
+              <div class="overview-badge"><i data-lucide="shield-check"></i><span>KSP Intelligence Command</span></div>
+              <div class="overview-live-tag"><span class="pulse-dot"></span>LIVE</div>
+            </div>
             <div class="kpi-grid" id="kpiGrid"></div>
-            <div class="two-column">
-              <section class="surface">
+
+            <!-- Early Warning Alert Strip -->
+            <div class="alert-strip" id="alertStrip">
+              <div class="alert-strip-inner">
+                <span class="alert-strip-label"><i data-lucide="triangle-alert"></i> EARLY WARNING</span>
+                <span class="alert-strip-text" id="alertStripText">Loading intelligence alerts...</span>
+              </div>
+            </div>
+
+            <div class="overview-grid">
+              <!-- Module Coverage -->
+              <section class="surface overview-modules-card">
                 <div class="section-head">
                   <div>
-                    <p class="eyebrow" data-i18n="moduleCoverage">Module coverage</p>
-                    <h2 data-i18n="implementedSurface">Implemented system surface</h2>
+                    <p class="eyebrow">Platform Capabilities</p>
+                    <h2>10-Module Solution Framework</h2>
                   </div>
                   <i data-lucide="boxes"></i>
                 </div>
-                <div class="module-grid" id="moduleGrid"></div>
+                <div class="capability-grid" id="moduleGrid"></div>
               </section>
-              <section class="surface">
+
+              <!-- Forecast Hotspots -->
+              <section class="surface overview-hotspot-card">
                 <div class="section-head">
                   <div>
-                    <p class="eyebrow" data-i18n="triage">Triage</p>
-                    <h2 data-i18n="forecastHotspots">Forecast hotspots</h2>
+                    <p class="eyebrow">Module 8 &bull; Proactive Intelligence</p>
+                    <h2>Crime Forecast Hotspots</h2>
                   </div>
-                  <i data-lucide="map-pinned"></i>
+                  <i data-lucide="radar"></i>
                 </div>
-                <div id="hotspotList" class="stack-list"></div>
+                <div id="hotspotList" class="hotspot-radar-list"></div>
+              </section>
+
+              <!-- District Risk Summary -->
+              <section class="surface overview-district-card">
+                <div class="section-head">
+                  <div>
+                    <p class="eyebrow">Spatial Intelligence</p>
+                    <h2>Karnataka District Risk Matrix</h2>
+                  </div>
+                  <i data-lucide="map-pin"></i>
+                </div>
+                <div class="district-risk-grid" id="districtRiskGrid"></div>
               </section>
             </div>
           </section>
@@ -428,76 +478,198 @@
             </div>
           </section>
 
+          <!-- Module 4: Sociological Insights -->
           <section class="panel" id="analytics">
-            <div class="three-column">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">Module 4</p>
+                <h2>Sociological Crime Insights</h2>
+                <p class="panel-hero-sub">Demographic overlays, urbanization patterns, population distribution, and socio-economic indicators.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="landmark"></i></div>
+            </div>
+            <div class="two-column">
               <section class="surface">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="trends">Trends</p>
-                    <h2 data-i18n="caseMix">Case mix</h2>
-                  </div>
-                  <i data-lucide="chart-no-axes-combined"></i>
+                  <div><p class="eyebrow">Module 4 &bull; Sociological</p><h2>Socio-Demographic Insights</h2></div>
+                  <i data-lucide="users"></i>
                 </div>
-                <div id="trendBars" class="bar-stack"></div>
+                <div id="socioList" class="stack-list socio-insight-list"></div>
               </section>
               <section class="surface">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="sociological">Sociological</p>
-                    <h2 data-i18n="workloadInsights">Workload insights</h2>
-                  </div>
-                  <i data-lucide="landmark"></i>
+                  <div><p class="eyebrow">Demographic Trends</p><h2>District Population Indicators</h2></div>
+                  <i data-lucide="bar-chart"></i>
                 </div>
-                <div id="socioList" class="stack-list"></div>
-              </section>
-              <section class="surface">
-                <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="profiles">Profiles</p>
-                    <h2 data-i18n="namedSuspectProfile">Named suspect profile</h2>
-                  </div>
-                  <i data-lucide="user-search"></i>
-                </div>
-                <div class="inline-form">
-                  <input id="suspectInput" placeholder="Enter suspect/person name from official records" data-i18n-placeholder="suspectPlaceholder" />
-                  <button class="icon-button" id="profileBtn" title="Search profile" aria-label="Search profile" data-i18n-title="searchProfile"><i data-lucide="search"></i></button>
-                </div>
-                <div id="profileResult" class="result-box"></div>
+                <div id="trendBars" class="bar-stack vis-bar-stack"></div>
               </section>
             </div>
           </section>
 
-          <section class="panel" id="patterns">
-            <div class="three-column">
-              <section class="surface glass-surface">
+          <!-- Module 5: Offender Profiling -->
+          <section class="panel" id="profiling">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">Module 5</p>
+                <h2>Criminology-Based Offender Profiling</h2>
+                <p class="panel-hero-sub">Identification of repeat offenders, habitual criminals, and behavioral analysis based on crime history and MO.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="user-search"></i></div>
+            </div>
+            <div class="two-column">
+              <section class="surface">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="patternDiscovery">Pattern discovery</p>
-                    <h2 data-i18n="clustersAndMo">Clusters and modus operandi</h2>
-                  </div>
+                  <div><p class="eyebrow">Module 5 &bull; Profiling</p><h2>Named Suspect Profile</h2></div>
+                  <i data-lucide="fingerprint"></i>
+                </div>
+                <div class="profile-search-bar">
+                  <input id="suspectInput" placeholder="Enter suspect / person name from official records" data-i18n-placeholder="suspectPlaceholder" />
+                  <button class="icon-button" id="profileBtn" title="Search profile" aria-label="Search profile"><i data-lucide="search"></i></button>
+                </div>
+                <div id="profileResult" class="result-box"></div>
+              </section>
+              <section class="surface">
+                <div class="section-head">
+                  <div><p class="eyebrow">Watchlist</p><h2>Habitual Offender Tracking</h2></div>
+                  <i data-lucide="shield-alert"></i>
+                </div>
+                <div class="stack-list" id="profilingWatchlist">
+                  <div class="list-item"><i data-lucide="alert-circle" style="color:var(--orange)"></i><span>No high-risk individuals tracked in current query</span></div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <!-- Module 3: Pattern Discovery -->
+          <section class="panel" id="patterns">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">Module 3</p>
+                <h2>Crime Pattern &amp; Trend Discovery</h2>
+                <p class="panel-hero-sub">Cluster analysis, modus operandi fingerprinting, seasonal crime rhythms, and AI anomaly detection.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="radar"></i></div>
+            </div>
+            <div class="patterns-dashboard-grid">
+              <section class="surface patterns-clusters-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">AI Cluster Detection</p><h2>Geographic Crime Clusters &amp; MO</h2></div>
                   <i data-lucide="radar"></i>
                 </div>
-                <div id="patternClusters" class="stack-list"></div>
+                <div id="patternClusters" class="cluster-badge-list"></div>
               </section>
-              <section class="surface">
+              <section class="surface patterns-trends-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="seasonalTrends">Seasonal trends</p>
-                    <h2 data-i18n="typeAndEvents">Type, month, and events</h2>
-                  </div>
+                  <div><p class="eyebrow">Seasonal Trends</p><h2>Type, Month &amp; Event Patterns</h2></div>
                   <i data-lucide="chart-no-axes-combined"></i>
                 </div>
-                <div id="patternBars" class="bar-stack"></div>
+                <div id="patternBars" class="bar-stack vis-bar-stack"></div>
               </section>
-              <section class="surface">
+              <section class="surface patterns-quality-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="dataQuality">Data quality</p>
-                    <h2 data-i18n="officialFieldCoverage">Official field coverage</h2>
-                  </div>
+                  <div><p class="eyebrow">Data Integrity</p><h2>Field Coverage &amp; Quality</h2></div>
                   <i data-lucide="shield-check"></i>
                 </div>
-                <div id="patternQuality" class="stack-list"></div>
+                <div id="patternQuality" class="quality-list"></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="panel" id="crime_dashboard">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">District Crime Intelligence</p>
+                <h2>Crime Dashboard, Geo Mapping &amp; Tracking</h2>
+                <p class="panel-hero-sub">Switch districts to redraw the crime mix, risk ranking, time pattern, geo clusters, and downloadable field report.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="chart-no-axes-combined"></i></div>
+            </div>
+
+            <section class="surface crime-dashboard-control">
+              <div>
+                <p class="eyebrow">District filter</p>
+                <h2>Live visualization scope</h2>
+              </div>
+              <label class="crime-dashboard-select">
+                <span>District</span>
+                <select id="crimeDashboardDistrict">
+                  <option value="all">All accessible districts</option>
+                </select>
+              </label>
+              <div class="crime-dashboard-actions">
+                <button class="secondary-action inline" type="button" id="crimeDashboardDownloadCsv"><i data-lucide="download"></i><span>CSV report</span></button>
+                <button class="secondary-action inline" type="button" id="crimeDashboardDownloadJson"><i data-lucide="file-json"></i><span>JSON report</span></button>
+              </div>
+            </section>
+
+            <div class="crime-dashboard-grid">
+              <section class="surface crime-dashboard-kpis">
+                <div class="section-head">
+                  <div><p class="eyebrow">Command KPIs</p><h2 id="crimeDashboardTitle">All districts</h2></div>
+                  <i data-lucide="activity"></i>
+                </div>
+                <div id="crimeDashboardKpis" class="crime-kpi-grid"></div>
+              </section>
+
+              <section class="surface crime-dashboard-chart-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Bar chart</p><h2>Crime type mix</h2></div>
+                  <i data-lucide="bar-chart-3"></i>
+                </div>
+                <div id="crimeDashboardTypeChart" class="crime-chart-stack"></div>
+              </section>
+
+              <section class="surface crime-dashboard-chart-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Risk ranking</p><h2>Hotspot scores</h2></div>
+                  <i data-lucide="flame"></i>
+                </div>
+                <div id="crimeDashboardRiskChart" class="crime-chart-stack"></div>
+              </section>
+
+              <section class="surface crime-dashboard-chart-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Pie chart</p><h2>Status distribution</h2></div>
+                  <i data-lucide="chart-pie"></i>
+                </div>
+                <div id="crimeDashboardPieChart" class="crime-pie-wrap"></div>
+              </section>
+
+              <section class="surface crime-dashboard-chart-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Lollipop chart</p><h2>District exposure ranking</h2></div>
+                  <i data-lucide="chart-bar-big"></i>
+                </div>
+                <div id="crimeDashboardLollipopChart" class="crime-lollipop-wrap"></div>
+              </section>
+
+              <section class="surface crime-dashboard-line-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Line chart</p><h2>Monthly crime trend</h2></div>
+                  <i data-lucide="chart-line"></i>
+                </div>
+                <div id="crimeDashboardLineChart" class="crime-line-wrap"></div>
+              </section>
+
+              <section class="surface crime-dashboard-map-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Geo mapping</p><h2>District crime clusters</h2></div>
+                  <i data-lucide="map-pinned"></i>
+                </div>
+                <div class="crime-dashboard-map-shell">
+                  <div id="crimeDashboardMap" class="crime-dashboard-map"></div>
+                  <div id="crimeDashboardLocalMap" class="crime-dashboard-local-map">
+                    <svg id="crimeDashboardMapSvg" viewBox="0 0 860 520" role="img" aria-label="District crime dashboard map"></svg>
+                  </div>
+                </div>
+              </section>
+
+              <section class="surface crime-dashboard-tracking-card">
+                <div class="section-head">
+                  <div><p class="eyebrow">Tracking report</p><h2>District incidents and response signals</h2></div>
+                  <i data-lucide="list-checks"></i>
+                </div>
+                <div id="crimeDashboardTracking" class="crime-tracking-list"></div>
               </section>
             </div>
           </section>
@@ -613,6 +785,8 @@
                   <button type="button" data-network-export="pdf"><i data-lucide="file-down"></i><span>PDF</span></button>
                   <button type="button" data-network-export="graphml"><i data-lucide="share-2"></i><span>GraphML</span></button>
                   <button type="button" data-network-export="csv"><i data-lucide="table"></i><span>CSV</span></button>
+                  <div class="divider"></div>
+                  <button type="button" id="networkFullscreenBtn" title="Toggle Fullscreen" data-i18n-title="toggleFullscreen"><i data-lucide="maximize"></i><span>Fullscreen</span></button>
                 </div>
               </div>
 
@@ -691,83 +865,92 @@
             </div>
           </section>
 
+          <!-- Module 7 & 8: Financial Crime + Forecasting -->
           <section class="panel" id="financial">
-            <div class="two-column">
-              <section class="surface">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">Module 7</p>
+                <h2>Financial Crime &amp; Transaction Link Analysis</h2>
+                <p class="panel-hero-sub">Money trail detection, suspicious account networks, circular flow identification, and high-value transaction alerts.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="indian-rupee"></i></div>
+            </div>
+            <div class="financial-dashboard-grid">
+              <section class="surface financial-summary-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="financialAnalysis">Financial analysis</p>
-                    <h2 data-i18n="transactionTriage">Transaction triage</h2>
-                  </div>
+                  <div><p class="eyebrow">Transaction Triage</p><h2>Financial Overview</h2></div>
                   <i data-lucide="wallet-cards"></i>
                 </div>
-                <div id="financialSummary" class="kpi-grid compact"></div>
-                <div id="financialFindings" class="stack-list"></div>
-                <div id="accountLinks" class="stack-list account-link-list"></div>
+                <div id="financialSummary" class="kpi-grid compact fin-kpi"></div>
+                <div id="financialFindings" class="findings-list"></div>
+                <div id="accountLinks" class="account-link-list"></div>
               </section>
-              <section class="surface">
+              <section class="surface financial-forecast-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="forecast">Forecast</p>
-                    <h2 data-i18n="districtPlanning">District planning</h2>
-                  </div>
+                  <div><p class="eyebrow">Module 8 &bull; Forecasting</p><h2>District Risk Forecast</h2></div>
                   <i data-lucide="radar"></i>
                 </div>
-                <div id="forecastBars" class="bar-stack"></div>
-                <div id="earlyWarnings" class="stack-list warning-list"></div>
+                <div id="forecastBars" class="bar-stack vis-bar-stack"></div>
+                <div id="earlyWarnings" class="early-warning-list"></div>
               </section>
             </div>
           </section>
 
+          <!-- Module 6: Investigator Decision Support -->
           <section class="panel" id="support">
-            <div class="two-column">
-              <section class="surface">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">Module 6</p>
+                <h2>Investigator Decision Support</h2>
+                <p class="panel-hero-sub">Automated case summaries, similar case matching, investigation timelines, and potential investigative leads.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="folder-open"></i></div>
+            </div>
+            <div class="support-dashboard-grid">
+              <section class="surface support-pack-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="decisionSupport">Decision support</p>
-                    <h2 data-i18n="selectedCase">Selected case</h2>
-                  </div>
+                  <div><p class="eyebrow">Module 6 &bull; Decision Support</p><h2>Case Intelligence Pack</h2></div>
                   <i data-lucide="list-checks"></i>
                 </div>
-                <select id="caseSelect"></select>
-                <button class="secondary-action" id="supportBtn"><i data-lucide="sparkles"></i><span data-i18n="buildSupportPack">Build support pack</span></button>
-                <div id="supportResult" class="result-box"></div>
+                <select id="caseSelect" class="case-select-full"></select>
+                <button class="primary-action support-build-btn" id="supportBtn"><i data-lucide="sparkles"></i><span>Build Support Pack</span></button>
+                <div id="supportResult" class="result-box support-result-box"></div>
               </section>
-              <section class="surface">
+              <section class="surface support-explain-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="explainability">Explainability</p>
-                    <h2 data-i18n="evidenceTrail">Evidence trail</h2>
-                  </div>
-                  <i data-lucide="scan-search"></i>
+                  <div><p class="eyebrow">Evidence Engine</p><h2>Generate Case Timeline</h2></div>
+                  <i data-lucide="clock"></i>
                 </div>
-                <button class="secondary-action" id="explainBtn"><i data-lucide="file-search"></i><span data-i18n="explainSelectedCase">Explain selected case</span></button>
+                <button class="secondary-action" id="explainBtn"><i data-lucide="file-search"></i><span>Generate Evidence Trail</span></button>
                 <div id="explainResult" class="result-box"></div>
               </section>
             </div>
           </section>
 
+          <!-- Module 9: Explainable AI & Transparent Analytics -->
           <section class="panel" id="audit">
-            <div class="two-column">
-              <section class="surface">
+            <div class="panel-hero">
+              <div class="panel-hero-text">
+                <p class="eyebrow">Module 9</p>
+                <h2>Explainable AI &amp; Transparent Analytics</h2>
+                <p class="panel-hero-sub">Cryptographic audit hash chain, full action traceability, and compliance with law enforcement governance frameworks.</p>
+              </div>
+              <div class="panel-hero-icon"><i data-lucide="scroll-text"></i></div>
+            </div>
+            <div class="audit-dashboard-grid">
+              <section class="surface audit-integrity-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="integrity">Integrity</p>
-                    <h2 data-i18n="auditHashChain">Audit hash chain</h2>
-                  </div>
-                  <button class="icon-button" id="auditRefresh" title="Refresh audit" aria-label="Refresh audit" data-i18n-title="refreshAudit"><i data-lucide="refresh-cw"></i></button>
+                  <div><p class="eyebrow">Data Integrity</p><h2>Audit Hash Chain</h2></div>
+                  <button class="icon-button" id="auditRefresh" title="Refresh audit" aria-label="Refresh audit"><i data-lucide="refresh-cw"></i></button>
                 </div>
-                <div id="auditIntegrity" class="result-box"></div>
+                <div id="auditIntegrity" class="result-box audit-integrity-box"></div>
               </section>
-              <section class="surface">
+              <section class="surface audit-log-card">
                 <div class="section-head">
-                  <div>
-                    <p class="eyebrow" data-i18n="recentEvents">Recent events</p>
-                    <h2 data-i18n="auditLog">Audit log</h2>
-                  </div>
-                  <i data-lucide="scroll-text"></i>
+                  <div><p class="eyebrow">Traceability Log</p><h2>Recent System Events</h2></div>
+                  <i data-lucide="activity"></i>
                 </div>
-                <div id="auditLogs" class="stack-list"></div>
+                <div id="auditLogs" class="audit-log-stream"></div>
               </section>
             </div>
           </section>
@@ -886,6 +1069,73 @@
               <div id="rateLimitAlerts" class="stack-list"></div>
             </section>
           </section>
+
+          <section id="log_crime" class="panel scrollable" aria-label="Log Crime">
+            <header class="section-header">
+              <h2 data-i18n="logCrimeTitle">Log Police Crime Record</h2>
+              <p class="section-subtext" data-i18n="logCrimeSubtext">Create an official crime intelligence log with BNS sections.</p>
+            </header>
+            <div class="content-panel panel-flex">
+              <form id="crimeLogForm" class="log-crime-form">
+                <div class="form-grid">
+                  <label>
+                    <span>Crime Type <span class="required">*</span></span>
+                    <input type="text" name="crime_type" required placeholder="e.g. Assault, Theft">
+                  </label>
+                  <label>
+                    <span>Accused Name <span class="required">*</span></span>
+                    <input type="text" name="accused_name" required placeholder="Accused/Suspect Name">
+                  </label>
+                  <label>
+                    <span>Accused Aadhaar</span>
+                    <input type="text" name="accused_aadhaar" placeholder="12-digit Aadhaar Number" pattern="[0-9]{12}">
+                  </label>
+                  <label>
+                    <span>Accused Age</span>
+                    <input type="number" name="accused_age" placeholder="Age" min="0" max="120">
+                  </label>
+                  <label>
+                    <span>Accused Gender</span>
+                    <select name="accused_gender">
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </label>
+                  
+                  <div class="form-group-title full-width">Witnesses</div>
+                  <label><span>Witness A1</span><input type="text" name="witness_a1" placeholder="Primary Witness"></label>
+                  <label><span>Witness A2</span><input type="text" name="witness_a2" placeholder="Second Witness"></label>
+                  <label><span>Witness A3</span><input type="text" name="witness_a3" placeholder="Third Witness"></label>
+                  <label><span>Witness A4</span><input type="text" name="witness_a4" placeholder="Fourth Witness"></label>
+                  <label><span>Witness A5</span><input type="text" name="witness_a5" placeholder="Fifth Witness"></label>
+
+                  <div class="form-group-title full-width">Legal Counsel</div>
+                  <label><span>Prosecutor Name</span><input type="text" name="prosecutor_name" placeholder="Public Prosecutor"></label>
+                  <label><span>Defense Lawyer Name</span><input type="text" name="defense_lawyer_name" placeholder="Defense Counsel"></label>
+                  <label><span>Bail Type</span><input type="text" name="bail_type" placeholder="e.g. Anticipatory, Regular"></label>
+                  <label><span>Bail Surety Person Name</span><input type="text" name="bail_surety_name" placeholder="Surety Name"></label>
+                  
+                  <div class="form-group-title full-width">Charge Sheet Sections (BNS)</div>
+                  <label class="full-width">
+                    <span>Select Applicable Sections</span>
+                    <select name="charge_sheet_sections" id="chargeSheetSections" multiple class="multi-select">
+                      <!-- Populated via JS from API -->
+                    </select>
+                    <small>Hold Ctrl (or Cmd on Mac) to select multiple sections.</small>
+                  </label>
+                </div>
+                
+                <div class="form-actions">
+                  <button type="button" id="autoFillCrimeLogBtn" class="secondary-action"><i data-lucide="zap"></i> Auto-Fill & Submit</button>
+                  <button type="submit" class="primary-action"><i data-lucide="save"></i> Submit Crime Log</button>
+                </div>
+                <div id="crimeLogStatus" class="form-status" role="alert"></div>
+              </form>
+            </div>
+          </section>
+
         </main>
         <button class="material-fab" id="globalFab" type="button" aria-label="Ask KSP AI">
           <i data-lucide="plus"></i>
@@ -988,6 +1238,23 @@
           </section>
         </aside>
       </section>
+    </div>
+
+    <!-- Tour Modal Overlay -->
+    <div id="tourModalOverlay" class="tour-modal-overlay is-hidden">
+      <div class="tour-modal glass-surface">
+        <div class="tour-modal-header">
+          <i data-lucide="info" class="tour-icon"></i>
+          <h3 id="tourModalTitle">Feature Guide</h3>
+          <button class="icon-button" id="closeTourBtn" aria-label="Close Guide"><i data-lucide="x"></i></button>
+        </div>
+        <div class="tour-modal-body" id="tourModalBody">
+          <!-- Guide content injected here -->
+        </div>
+        <div class="tour-modal-footer">
+          <button class="primary-action" id="tourModalAcknowledgeBtn">Got it!</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

@@ -1,0 +1,19 @@
+{
+  "command": "python3 -u catalyst_app.py",
+  "buildPath": "./dist/catalyst-appsail",
+  "stack": "python_3_12",
+  "env_variables": {
+    "PYTHONPATH": "src",
+    "SECURE_API_ENVIRONMENT": "production",
+    "SECURE_API_DATABASE_PATH": "/tmp/ksp_secure_system.db",
+    "SECURE_API_JWT_SECRET": "replace-with-a-strong-unique-secret-at-least-32-characters",
+    "SECURE_API_ALLOWED_HOSTS": "*",
+    "SECURE_API_DEMO_MODE": "true",
+    "SECURE_API_DEMO_PASSWORD": "admin123",
+    "SECURE_API_TOKEN_TTL_MINUTES": "45",
+    "SECURE_API_RATE_LIMIT_PER_MINUTE": "240",
+    "SECURE_API_MAX_REQUEST_BYTES": "26214400"
+  },
+  "memory": 1024,
+  "scripts": {}
+}

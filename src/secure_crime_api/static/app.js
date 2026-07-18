@@ -21,8 +21,10 @@ const PANEL_KEYS = {
   biometric: "Settings",
   cases: "Cases",
   command: "AI Assistant",
+  crime_dashboard: "Crime Dashboard",
   financial: "Financial Intelligence",
   framework: "AI Assistant",
+  log_crime: "Log Crime",
   map: "Geospatial Intelligence",
   network: "Networks",
   overview: "Home",
@@ -709,6 +711,9 @@ const state = {
   mapProvider: storedMapProvider === "google" ? "google" : "leaflet",
   googleMapsKey: localStorage.getItem("kspGoogleMapsKey") || "",
   heatEnabled: true,
+  crimeDashboardDistrict: localStorage.getItem("kspCrimeDashboardDistrict") || "all",
+  crimeDashboardMap: null,
+  crimeDashboardMarkers: [],
   leafletMap: null,
   leafletMarkers: [],
   googleMap: null,
@@ -870,6 +875,7 @@ function setLanguage(language) {
   renderForecast();
   renderHotspots();
   renderMapInsights();
+  renderCrimeDashboard();
   renderRateLimitAlerts();
   iconRefresh();
 }
@@ -957,6 +963,8 @@ async function boot() {
       state.user = await api("/auth/me");
       showView("shell");
       await loadAll();
+      const activePanel = $("#shell")?.getAttribute("data-active-panel") || "command";
+      checkTour(activePanel);
     } catch (_error) {
       clearSession();
     }
@@ -1078,6 +1086,14 @@ function bindEvents() {
   $("#mobileMenu").addEventListener("click", toggleMobileSidebar);
   $("#refreshCases").addEventListener("click", loadCases);
   $("#caseSearchInput").addEventListener("input", debounce(handleCaseSearch, 120));
+
+  $$(".evaluator-login-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $("#username").value = btn.dataset.username;
+      $("#password").value = btn.dataset.password;
+      handleLogin({ preventDefault: () => {} });
+    });
+  });
   $("#caseFileUploadForm")?.addEventListener("submit", uploadCaseFile);
   $("#uploadType")?.addEventListener("change", renderUploadControls);
   $("#refreshFileUploads")?.addEventListener("click", () => loadFileUploads());
@@ -1090,9 +1106,11 @@ function bindEvents() {
     setPanel("command");
     $("#queryInput")?.focus();
   });
+  initTourModal();
   $("#newConversation").addEventListener("click", createConversation);
   $("#translateBtn").addEventListener("click", handleTranslate);
   $("#closeTranslationModal")?.addEventListener("click", closeTranslationModal);
+
   $("#exportPdfBtn").addEventListener("click", exportPdf);
   $("#profileBtn").addEventListener("click", loadProfile);
   $("#supportBtn").addEventListener("click", loadSupport);
@@ -1102,8 +1120,24 @@ function bindEvents() {
   $("#googleMapBtn").addEventListener("click", () => switchMapProvider("google"));
   $("#heatToggleBtn").addEventListener("click", toggleHeatLayer);
   $("#saveMapKey").addEventListener("click", saveGoogleMapsKey);
+  $("#crimeDashboardDistrict")?.addEventListener("change", (event) => {
+    state.crimeDashboardDistrict = event.target.value || "all";
+    localStorage.setItem("kspCrimeDashboardDistrict", state.crimeDashboardDistrict);
+    renderCrimeDashboard();
+  });
+  $("#crimeDashboardDownloadCsv")?.addEventListener("click", () => downloadCrimeDashboardReport("csv"));
+  $("#crimeDashboardDownloadJson")?.addEventListener("click", () => downloadCrimeDashboardReport("json"));
   $("#networkFocusApply")?.addEventListener("click", applyNetworkFocus);
   $("#networkFocusClear")?.addEventListener("click", clearNetworkFocus);
+  $("#networkFullscreenBtn")?.addEventListener("click", () => {
+    const workspace = $("#networkWorkbench");
+    if (workspace) {
+      workspace.classList.toggle("is-fullscreen");
+      if (window.cy) {
+        setTimeout(() => window.cy.resize(), 50);
+      }
+    }
+  });
   $("#networkFocusInput")?.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -1150,6 +1184,7 @@ function bindEvents() {
   document.addEventListener("click", handleAssistantActionClick);
   window.addEventListener("resize", debounce(() => {
     if (state.panel === "map") drawHeatCanvas();
+    if (state.panel === "crime_dashboard") renderCrimeDashboardMap();
     if (state.panel === "network") renderNetwork();
   }, 120));
 
@@ -1214,6 +1249,8 @@ async function establishSession(login) {
   localStorage.setItem("kspToken", state.token);
   showView("shell");
   await loadAll();
+  const activePanel = $("#shell")?.getAttribute("data-active-panel") || "command";
+  checkTour(activePanel);
 }
 
 function supportsWebAuthn() {
@@ -1382,6 +1419,7 @@ async function loadAll() {
     loadPatterns(),
     loadAdvancedCrime(),
     loadNetwork(),
+    initCrimeLogger(),
     loadSociological(),
     loadFinancial(),
     loadForecast(),
@@ -1399,19 +1437,82 @@ function updateUserChrome() {
   setText("#userLabel", label);
   setText("#sessionLabel", state.user ? `${state.user.district} / ${labelValue(state.user.role)}` : t("intelligentSystems"));
   updateCommandHeader();
-  $$(".admin-only").forEach((node) => node.classList.toggle("is-hidden", !isSuperAdmin()));
-  if (isSuperAdmin()) {
+  
+  const isSuper = isSuperAdmin();
+  const hasAudit = isSuper || state.user?.role === "supervisor";
+  
+  $$(".admin-only").forEach((node) => node.classList.toggle("is-hidden", !isSuper));
+  $$(".audit-only").forEach((node) => node.classList.toggle("is-hidden", !hasAudit));
+  
+  if (isSuper) {
     startRateAlertPolling();
   } else {
     stopRateAlertPolling();
   }
-  if (!isSuperAdmin() && state.panel === "admin") {
+  
+  if (!isSuper && state.panel === "admin") {
+    setPanel("overview");
+  }
+  if (!hasAudit && state.panel === "audit") {
     setPanel("overview");
   }
 }
 
 function isSuperAdmin() {
   return state.user?.role === "super_admin";
+}
+const TOUR_GUIDES = {
+  overview: "Welcome to the KSP Intelligence Platform! The Overview dashboard shows key metrics — total cases, active investigations, high-risk suspects, and quick-action shortcuts to every module.",
+  command: "The Command Center is your main interface for conversational intelligence. You can ask the AI questions about cases, suspect profiles, or crime trends, and export your session to PDF.",
+  network: "Network Analysis visually maps the relationships between suspects, cases, and locations. Click on nodes to see detailed demographics and risk profiles to help identify syndicates.",
+  cases: "The Case Explorer lets you search, filter, and view detailed records of all registered cases using an advanced hash-prefix search.",
+  log_crime: "Log Crime is where officers securely enter new FIR data, suspect demographics, and bail details directly into the intelligence platform.",
+  map: "The Geospatial Map visually plots crime hotspots and incident locations across the state. You can toggle heatmaps and standard map views.",
+  admin: "Governance allows Super Admins to manage user accounts, roles, monitor rate-limit breaches, and review comprehensive audit logs for system security.",
+  patterns: "Patterns & Trends provides statistical charts and graphs analyzing crime types and temporal data over time.",
+  framework: "The Legal Framework reference allows you to quickly browse and look up the Bharatiya Nyaya Sanhita (BNS) sections and their punishments."
+};
+
+function initTourModal() {
+  $("#closeTourBtn")?.addEventListener("click", () => {
+    $("#tourModalOverlay").classList.add("is-hidden");
+  });
+  $("#tourModalAcknowledgeBtn")?.addEventListener("click", () => {
+    $("#tourModalOverlay").classList.add("is-hidden");
+  });
+}
+
+function checkTour(panelId) {
+  const guideText = TOUR_GUIDES[panelId];
+  if (!guideText) return;
+
+  const today = new Date().toDateString();
+  const lastTourDate = localStorage.getItem("ksp_tour_date");
+  
+  if (lastTourDate !== today) {
+    localStorage.setItem("ksp_tour_date", today);
+    localStorage.setItem("ksp_seen_tours", JSON.stringify([]));
+  }
+  
+  const seenToursStr = localStorage.getItem("ksp_seen_tours") || "[]";
+  let seenTours = [];
+  try { seenTours = JSON.parse(seenToursStr); } catch (e) {}
+  
+  if (!seenTours.includes(panelId)) {
+    const titleEl = $("#tourModalTitle");
+    const bodyEl = $("#tourModalBody");
+    const overlay = $("#tourModalOverlay");
+    
+    if (titleEl && bodyEl && overlay) {
+      titleEl.textContent = panelTitle(panelId) + " — Feature Guide";
+      bodyEl.textContent = guideText;
+      overlay.classList.remove("is-hidden");
+      iconRefresh();
+      
+      seenTours.push(panelId);
+      localStorage.setItem("ksp_seen_tours", JSON.stringify(seenTours));
+    }
+  }
 }
 
 function setPanel(panel) {
@@ -1428,10 +1529,12 @@ function setPanel(panel) {
   if (panel === "framework") renderFramework();
   if (panel === "patterns") renderPatterns();
   if (panel === "map") renderCrimeMap();
+  if (panel === "crime_dashboard") renderCrimeDashboard();
   if (panel === "admin") {
     loadUsers();
     loadRateLimitAlerts(false);
   }
+  checkTour(panel);
   $("#shell").classList.remove("sidebar-open");
   iconRefresh();
 }
@@ -1467,6 +1570,7 @@ async function loadCases() {
   renderCases();
   renderCaseSelect();
   renderOverview();
+  renderCrimeDashboard();
 }
 
 async function handleCaseSearch() {
@@ -1819,6 +1923,7 @@ async function loadAdvancedCrime() {
     renderOverview();
     renderPatterns();
     renderMapInsights();
+    renderCrimeDashboard();
     renderNetwork();
     renderCrimeMap();
     updateCommandHeader();
@@ -1908,6 +2013,38 @@ function renderOverview() {
   ].join("");
   renderTopViewMetrics();
   renderHotspots();
+
+  // Populate Alert Strip
+  const alertEl = $("#alertStripText");
+  if (alertEl) {
+    const alerts = state.advancedCrime?.emerging_trend_alerts || [];
+    if (alerts.length) {
+      alertEl.textContent = alerts.slice(0, 3).map(a => `${a.district}: ${a.crime_type} (${a.severity})`).join(" · ");
+    } else if (findings > 0) {
+      alertEl.textContent = `${findings} financial anomaly finding(s) detected · ${open} open FIRs require attention`;
+    } else {
+      alertEl.textContent = `System nominal · ${cases.length} authorized records · ${open} open FIRs`;
+    }
+  }
+
+  // Populate District Risk Matrix
+  const districtRiskEl = $("#districtRiskGrid");
+  if (districtRiskEl) {
+    const districtCounts = {};
+    cases.forEach(c => { districtCounts[c.district] = (districtCounts[c.district] || 0) + 1; });
+    const sortedDistricts = Object.entries(districtCounts).sort((a, b) => b[1] - a[1]);
+    const maxCount = sortedDistricts[0]?.[1] || 1;
+    const karnatakaDists = ["Bengaluru Urban","Mysuru","Belagavi","Hubballi-Dharwad","Kalaburagi","Mangaluru","Shivamogga","Tumakuru"];
+    const displayDistricts = sortedDistricts.length ? sortedDistricts.slice(0, 8) : karnatakaDists.map(d => [d, 0]);
+    districtRiskEl.innerHTML = displayDistricts.map(([dist, cnt]) => {
+      const pct = Math.round((cnt / maxCount) * 100);
+      return `<div class="district-risk-item">
+        <span class="risk-name">${escapeHtml(dist)}</span>
+        <div class="risk-bar-bg"><div class="risk-bar-fill" style="width:${pct}%"></div></div>
+        <span style="font-size:11px;color:var(--muted,#94a3b8)">${cnt} case${cnt !== 1 ? "s" : ""}</span>
+      </div>`;
+    }).join("");
+  }
 }
 
 function renderTopViewMetrics() {
@@ -2416,33 +2553,39 @@ function renderCytoscapeNetwork(prepared, container, canvas) {
       element.position = presetPositions[element.data.id];
     }
   });
-  const cy = window.cytoscape({
-    container,
-    elements,
-    boxSelectionEnabled: false,
-    autoungrabify: prepared.nodes.length > 1200,
-    textureOnViewport: true,
-    hideEdgesOnViewport: prepared.nodes.length > 1800,
-    motionBlur: prepared.nodes.length > 450,
-    wheelSensitivity: 0.18,
-    minZoom: 0.08,
-    maxZoom: 4,
-    style: cytoscapeNetworkStyle(),
-    layout: layoutName === "cose"
-      ? {
-          name: "cose",
-          animate: false,
-          fit: true,
-          padding: 38,
-          nodeRepulsion: 580000,
-          idealEdgeLength: 112,
-          edgeElasticity: 90,
-          gravity: 0.18,
-          numIter: prepared.nodes.length > 300 ? 750 : 1100,
-        }
-      : { name: "preset", fit: true, padding: 42 },
-  });
-  state.networkCy = cy;
+  try {
+    const cy = window.cytoscape({
+      container,
+      elements,
+      boxSelectionEnabled: false,
+      autoungrabify: prepared.nodes.length > 1200,
+      textureOnViewport: true,
+      hideEdgesOnViewport: prepared.nodes.length > 1800,
+      motionBlur: prepared.nodes.length > 450,
+      wheelSensitivity: 0.18,
+      minZoom: 0.08,
+      maxZoom: 4,
+      style: cytoscapeNetworkStyle(),
+      layout: layoutName === "cose"
+        ? {
+            name: "cose",
+            animate: false,
+            fit: true,
+            padding: 38,
+            nodeRepulsion: 580000,
+            idealEdgeLength: 112,
+            edgeElasticity: 90,
+            gravity: 0.18,
+            numIter: prepared.nodes.length > 300 ? 750 : 1100,
+          }
+        : { name: "preset", fit: true, padding: 42 },
+    });
+    state.networkCy = cy;
+  } catch (err) {
+    console.error("Cytoscape initialization failed:", err);
+    container.innerHTML = `<div class="network-empty-state">Failed to render network graph.</div>`;
+    return;
+  }
   cy.on("mouseover", "node", (event) => {
     const node = event.target;
     node.data("displayLabel", node.data("label"));
@@ -3400,6 +3543,9 @@ function renderSuspectNetworkDetail(node, graph) {
   return `
     <div class="detail-grid">
       ${detailRow("Suspect name", metadata.suspect_name || node.label)}
+      ${detailRow("Aadhaar Number", metadata.aadhaar_number)}
+      ${detailRow("Age", metadata.age)}
+      ${detailRow("Gender", metadata.gender)}
       ${detailRow("Account holder", metadata.account_holder)}
       ${detailRow("Accounts", (metadata.accounts || []).join(", "))}
       ${detailRow("Named in accessible cases", cases.length || node.case_count || 0)}
@@ -3784,6 +3930,377 @@ function renderForecast() {
         ...data.early_warnings.map((item) => listItem(t("earlyWarning"), item, "warning-card")),
       ].join("")
     : "";
+}
+
+function renderCrimeDashboard() {
+  const root = $("#crime_dashboard");
+  if (!root) return;
+  populateCrimeDashboardDistricts();
+  const report = crimeDashboardReport();
+  setText("#crimeDashboardTitle", report.districtLabel);
+  $("#crimeDashboardKpis").innerHTML = [
+    metric("FIR records", formatCount(report.caseCount), "Authorized case registry"),
+    metric("Imported incidents", formatCount(report.importedIncidentCount), "Crime dataset clusters"),
+    metric("High risk areas", formatCount(report.highRiskCount), "Score 70 and above"),
+    metric("Mapped points", formatCount(report.mappedPointCount), "Geo tracking signals"),
+  ].join("");
+  $("#crimeDashboardTypeChart").innerHTML = renderCrimeDashboardBars(report.typeBuckets, "case");
+  $("#crimeDashboardRiskChart").innerHTML = renderCrimeDashboardRiskBars(report.riskAreas);
+  $("#crimeDashboardPieChart").innerHTML = renderCrimeDashboardPie(report.statusBuckets);
+  $("#crimeDashboardLollipopChart").innerHTML = renderCrimeDashboardLollipop(report.lollipopBuckets, report.selected === "all" ? "districts" : "crime types");
+  $("#crimeDashboardLineChart").innerHTML = renderCrimeDashboardLine(report.monthBuckets);
+  $("#crimeDashboardTracking").innerHTML = renderCrimeDashboardTracking(report);
+  renderCrimeDashboardMap(report.mapPoints);
+  iconRefresh();
+}
+
+function populateCrimeDashboardDistricts() {
+  const select = $("#crimeDashboardDistrict");
+  if (!select) return;
+  const current = state.crimeDashboardDistrict || "all";
+  const districts = Array.from(new Set([
+    ...(state.cases || []).map((item) => item.district),
+    ...(state.advancedCrime?.heatmap_points || []).map((item) => item.district),
+    ...(state.advancedCrime?.risk_areas || []).map((item) => item.district),
+  ].filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  select.innerHTML = [
+    `<option value="all">All accessible districts</option>`,
+    ...districts.map((district) => `<option value="${escapeHtml(district)}">${escapeHtml(district)}</option>`),
+  ].join("");
+  select.value = districts.includes(current) || current === "all" ? current : "all";
+  state.crimeDashboardDistrict = select.value;
+}
+
+function crimeDashboardReport() {
+  const selected = state.crimeDashboardDistrict || "all";
+  const allDistricts = selected === "all";
+  const cases = (state.cases || []).filter((item) => allDistricts || item.district === selected);
+  const heatmapPoints = (state.advancedCrime?.heatmap_points || []).filter((item) => allDistricts || item.district === selected);
+  const riskAreas = (state.advancedCrime?.risk_areas || []).filter((item) => allDistricts || item.district === selected);
+  const alerts = (state.advancedCrime?.emerging_trend_alerts || []).filter((item) => allDistricts || item.district === selected);
+  const typeBuckets = bucketCounts([
+    ...cases.map((item) => item.case_type || "Unclassified"),
+    ...heatmapPoints.map((item) => item.top_crime_type || "Imported incidents"),
+  ]);
+  const statusBuckets = bucketCounts(cases.map((item) => item.status || "unknown"));
+  const monthBuckets = monthTrendBuckets(cases);
+  const lollipopBuckets = allDistricts
+    ? weightedBucketCounts([
+        ...cases.map((item) => ({ key: item.district, count: 1 })),
+        ...heatmapPoints.map((item) => ({ key: item.district, count: Number(item.incident_count || 0) })),
+      ])
+    : weightedBucketCounts([
+        ...cases.map((item) => ({ key: item.case_type || "Unclassified", count: 1 })),
+        ...riskAreas.map((item) => ({ key: item.crime_type || "Risk signal", count: Number(item.score || 0) })),
+      ]);
+  const mappedCases = cases.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude));
+  const importedIncidentCount = heatmapPoints.reduce((total, item) => total + Number(item.incident_count || 0), 0);
+  const mapPoints = heatmapPoints.length
+    ? heatmapPoints.map((item) => ({
+        label: `${item.incident_count} incidents`,
+        district: item.district,
+        case_type: item.top_crime_type,
+        risk_level: item.risk_level,
+        lat: item.latitude,
+        lng: item.longitude,
+        weight: item.weight,
+      }))
+    : mappedCases.map((item) => ({
+        label: item.fir_number,
+        district: item.district,
+        case_type: item.case_type || item.status,
+        risk_level: item.sensitivity === "restricted" ? "high" : "medium",
+        lat: item.latitude,
+        lng: item.longitude,
+        weight: item.sensitivity === "restricted" ? 1.4 : 1,
+      }));
+  return {
+    selected,
+    districtLabel: allDistricts ? "All accessible districts" : selected,
+    caseCount: cases.length,
+    openCount: cases.filter((item) => item.status === "open").length,
+    restrictedCount: cases.filter((item) => item.sensitivity === "restricted").length,
+    importedIncidentCount,
+    mappedPointCount: mapPoints.length,
+    highRiskCount: riskAreas.filter((item) => item.risk_level === "high" || Number(item.score || 0) >= 70).length,
+    typeBuckets,
+    statusBuckets,
+    monthBuckets,
+    lollipopBuckets,
+    cases,
+    heatmapPoints,
+    riskAreas: riskAreas.sort((a, b) => Number(b.score || 0) - Number(a.score || 0)),
+    alerts,
+    mapPoints,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function bucketCounts(values) {
+  const counts = values.reduce((acc, value) => {
+    const key = String(value || "Unknown");
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.entries(counts)
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+}
+
+function weightedBucketCounts(items) {
+  const counts = items.reduce((acc, item) => {
+    const key = String(item?.key || "Unknown");
+    acc[key] = (acc[key] || 0) + Number(item?.count || 0);
+    return acc;
+  }, {});
+  return Object.entries(counts)
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+}
+
+function monthTrendBuckets(cases) {
+  const rows = cases
+    .map((item) => {
+      const value = item.incident_at || item.created_at;
+      const date = value ? new Date(value) : null;
+      if (!date || Number.isNaN(date.getTime())) return null;
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    })
+    .filter(Boolean);
+  const buckets = bucketCounts(rows).sort((a, b) => a.key.localeCompare(b.key));
+  if (buckets.length >= 2) return buckets.slice(-8);
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    return { key, count: buckets.find((item) => item.key === key)?.count || 0 };
+  });
+}
+
+function renderCrimeDashboardBars(buckets, unitLabel) {
+  if (!buckets.length) return `<p class="muted-copy">No crime records available for this district.</p>`;
+  const max = Math.max(1, ...buckets.map((item) => item.count));
+  return buckets.slice(0, 9).map((item, index) => {
+    const width = Math.max(8, Math.round((item.count / max) * 100));
+    return `
+      <div class="crime-chart-row" style="--bar-width:${width}%;--bar-index:${index}">
+        <span class="crime-chart-label">${escapeHtml(item.key)}</span>
+        <div class="crime-chart-track"><span></span></div>
+        <strong>${formatCount(item.count)} ${escapeHtml(unitLabel)}${item.count === 1 ? "" : "s"}</strong>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderCrimeDashboardPie(buckets) {
+  if (!buckets.length) return `<p class="muted-copy">No status records available for this district.</p>`;
+  const total = buckets.reduce((sum, item) => sum + item.count, 0) || 1;
+  let offset = 25;
+  const colors = ["#14b8a6", "#0ea5e9", "#f59e0b", "#ef4444", "#8b5cf6"];
+  const segments = buckets.slice(0, 5).map((item, index) => {
+    const dash = (item.count / total) * 100;
+    const circle = `<circle class="crime-pie-segment" r="15.9155" cx="20" cy="20" fill="transparent" stroke="${colors[index % colors.length]}" stroke-width="7" stroke-dasharray="${dash} ${100 - dash}" stroke-dashoffset="${offset}"></circle>`;
+    offset -= dash;
+    return circle;
+  }).join("");
+  const legend = buckets.slice(0, 5).map((item, index) => `
+    <span><b style="background:${colors[index % colors.length]}"></b>${escapeHtml(labelValue(item.key))}<strong>${formatCount(item.count)}</strong></span>
+  `).join("");
+  return `
+    <div class="crime-pie-card">
+      <svg class="crime-pie-svg" viewBox="0 0 40 40" role="img" aria-label="Case status pie chart">
+        ${segments}
+        <text x="20" y="19" text-anchor="middle">${formatCount(total)}</text>
+        <text x="20" y="24" text-anchor="middle">cases</text>
+      </svg>
+      <div class="crime-pie-legend">${legend}</div>
+    </div>
+  `;
+}
+
+function renderCrimeDashboardLollipop(buckets, label) {
+  if (!buckets.length) return `<p class="muted-copy">No ${escapeHtml(label)} available for this scope.</p>`;
+  const rows = buckets.slice(0, 8);
+  const max = Math.max(1, ...rows.map((item) => item.count));
+  return rows.map((item, index) => {
+    const width = Math.max(7, Math.round((item.count / max) * 100));
+    return `
+      <div class="crime-lollipop-row" style="--lollipop-width:${width}%;--lollipop-index:${index}">
+        <span>${escapeHtml(item.key)}</span>
+        <div class="crime-lollipop-line"><i></i></div>
+        <strong>${formatCount(Math.round(item.count))}</strong>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderCrimeDashboardLine(buckets) {
+  if (!buckets.length) return `<p class="muted-copy">No timeline records available for this district.</p>`;
+  const width = 620;
+  const height = 220;
+  const padX = 44;
+  const padTop = 24;
+  const padBottom = 42;
+  const max = Math.max(1, ...buckets.map((item) => item.count));
+  const step = buckets.length > 1 ? (width - padX * 2) / (buckets.length - 1) : 0;
+  const points = buckets.map((item, index) => {
+    const x = padX + index * step;
+    const y = padTop + (1 - item.count / max) * (height - padTop - padBottom);
+    return { ...item, x, y };
+  });
+  const path = points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const area = `${path} L${points.at(-1).x.toFixed(1)} ${height - padBottom} L${points[0].x.toFixed(1)} ${height - padBottom} Z`;
+  return `
+    <svg class="crime-line-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly crime trend line chart">
+      <path class="crime-line-grid" d="M${padX} ${height - padBottom} H${width - padX}"></path>
+      <path class="crime-line-area" d="${area}"></path>
+      <path class="crime-line-path" d="${path}"></path>
+      ${points.map((point) => `
+        <g>
+          <circle class="crime-line-dot" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="5"></circle>
+          <text class="crime-line-value" x="${point.x.toFixed(1)}" y="${Math.max(14, point.y - 10).toFixed(1)}" text-anchor="middle">${formatCount(point.count)}</text>
+          <text class="crime-line-label" x="${point.x.toFixed(1)}" y="${height - 16}" text-anchor="middle">${escapeHtml(point.key.slice(2))}</text>
+        </g>
+      `).join("")}
+    </svg>
+  `;
+}
+
+function renderCrimeDashboardRiskBars(riskAreas) {
+  if (!riskAreas.length) return `<p class="muted-copy">No risk signals available for this district yet.</p>`;
+  return riskAreas.slice(0, 9).map((item, index) => `
+    <div class="crime-chart-row risk-${escapeAttr(item.risk_level || "medium")}" style="--bar-width:${Math.max(8, Math.min(100, Number(item.score || 0)))}%;--bar-index:${index}">
+      <span class="crime-chart-label">${escapeHtml(item.crime_type || "Crime signal")}</span>
+      <div class="crime-chart-track"><span></span></div>
+      <strong>${escapeHtml(String(item.score || 0))}</strong>
+    </div>
+  `).join("");
+}
+
+function renderCrimeDashboardTracking(report) {
+  const rows = [];
+  if (report.alerts.length) {
+    rows.push(...report.alerts.slice(0, 5).map((item) =>
+      listItem(`${item.district} / ${item.crime_type}`, item.explanation, `severity-${item.severity}`),
+    ));
+  }
+  rows.push(...report.riskAreas.slice(0, 6).map((item) =>
+    listItem(
+      `${item.district} / ${item.crime_type}`,
+      `Risk ${item.score}. Recent ${item.recent_count}, baseline ${item.baseline_count}. ${item.drivers.join(", ")}`,
+      `severity-${item.risk_level}`,
+    ),
+  ));
+  rows.push(...report.cases.slice(0, 6).map((item) =>
+    listItem(
+      `${item.fir_number} / ${item.district}`,
+      `${labelValue(item.status)} / ${item.case_type || "Unclassified"} / suspect ${item.suspect_name || "not recorded"}`,
+    ),
+  ));
+  return rows.join("") || listItem("No dashboard rows", "Change the district or import crime data to populate tracking signals.");
+}
+
+function renderCrimeDashboardMap(points = crimeDashboardReport().mapPoints) {
+  const mapNode = $("#crimeDashboardMap");
+  const localNode = $("#crimeDashboardLocalMap");
+  if (!mapNode || !localNode) return;
+  if (!$("#crime_dashboard")?.classList.contains("is-active")) return;
+  if (window.L) {
+    localNode.classList.add("is-hidden");
+    mapNode.classList.remove("is-hidden");
+    if (!state.crimeDashboardMap) {
+      state.crimeDashboardMap = L.map("crimeDashboardMap", {
+        attributionControl: true,
+        zoomControl: true,
+        preferCanvas: true,
+      }).setView(KARNATAKA_CENTER, 7);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(state.crimeDashboardMap);
+    }
+    requestAnimationFrame(() => {
+      state.crimeDashboardMap.invalidateSize();
+      state.crimeDashboardMarkers.forEach((marker) => marker.remove());
+      state.crimeDashboardMarkers = points.map((point) =>
+        L.circleMarker([point.lat, point.lng], {
+          radius: point.risk_level === "high" ? 10 : point.risk_level === "medium" ? 8 : 6,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: point.risk_level === "high" ? "#ef4444" : point.risk_level === "medium" ? "#f59e0b" : "#14b8a6",
+          fillOpacity: 0.9,
+        })
+          .bindPopup(`<strong>${escapeHtml(point.label)}</strong><br>${escapeHtml(point.district)}<br>${escapeHtml(point.case_type || "Crime signal")}`)
+          .addTo(state.crimeDashboardMap),
+      );
+      if (points.length) {
+        state.crimeDashboardMap.fitBounds(L.latLngBounds(points.map((point) => [point.lat, point.lng])).pad(0.24), { animate: false, maxZoom: 12 });
+      } else {
+        state.crimeDashboardMap.setView(KARNATAKA_CENTER, 7, { animate: false });
+      }
+    });
+  } else {
+    mapNode.classList.add("is-hidden");
+    localNode.classList.remove("is-hidden");
+    renderCrimeDashboardLocalMap(points);
+  }
+}
+
+function renderCrimeDashboardLocalMap(points) {
+  const svg = $("#crimeDashboardMapSvg");
+  if (!svg) return;
+  if (!points.length) {
+    svg.innerHTML = `<text class="map-label" x="40" y="56">No mapped crime points for this district.</text>`;
+    return;
+  }
+  const lats = points.map((item) => item.lat).filter(Number.isFinite);
+  const lngs = points.map((item) => item.lng).filter(Number.isFinite);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const latSpan = Math.max(0.01, maxLat - minLat);
+  const lngSpan = Math.max(0.01, maxLng - minLng);
+  svg.innerHTML = points.map((point) => {
+    const x = 80 + ((point.lng - minLng) / lngSpan) * 700;
+    const y = 440 - ((point.lat - minLat) / latSpan) * 360;
+    const cls = point.risk_level === "high" ? "incident-restricted" : "incident-standard";
+    return `<circle class="incident-point ${cls}" cx="${x}" cy="${y}" r="${point.risk_level === "high" ? 10 : 7}"><title>${escapeHtml(point.label)} ${escapeHtml(point.district)}</title></circle>`;
+  }).join("");
+}
+
+function downloadCrimeDashboardReport(format) {
+  const report = crimeDashboardReport();
+  const slug = report.districtLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "all-districts";
+  if (format === "json") {
+    downloadText(`crime-dashboard-${slug}.json`, JSON.stringify(report, null, 2), "application/json");
+    return;
+  }
+  const rows = [
+    ["district", "fir_number", "status", "case_type", "suspect_name", "sensitivity", "latitude", "longitude"],
+    ...report.cases.map((item) => [
+      item.district,
+      item.fir_number,
+      item.status,
+      item.case_type || "",
+      item.suspect_name || "",
+      item.sensitivity,
+      item.latitude ?? "",
+      item.longitude ?? "",
+    ]),
+    [],
+    ["risk_district", "crime_type", "score", "risk_level", "recent_count", "baseline_count", "drivers"],
+    ...report.riskAreas.map((item) => [
+      item.district,
+      item.crime_type,
+      item.score,
+      item.risk_level,
+      item.recent_count,
+      item.baseline_count,
+      (item.drivers || []).join("; "),
+    ]),
+  ];
+  downloadText(`crime-dashboard-${slug}.csv`, rows.map(csvRow).join("\n"), "text/csv");
 }
 
 function switchMapProvider(provider) {
@@ -4638,8 +5155,6 @@ function formatAssistantText(content, intelligence = null) {
   `;
 }
 
-function parseMarkdownToHtml(text) {
-
 function clearConversationView() {
   $("#conversationFeed").innerHTML = "";
   state.conversationId = null;
@@ -4821,81 +5336,6 @@ function removeMessage(messageId) {
   if (!messageId) return;
   const node = document.getElementById(messageId);
   if (node) node.remove();
-}
-
-function formatAssistantText(content, intelligence = null) {
-  const sections = parseAssistantSections(content);
-  const directAnswer = sections["Direct Answer"] || sections["ಉತ್ತರ"];
-  if (directAnswer) {
-    const metaOrder = [
-      "Intent",
-      "Selected Module",
-      "Evidence Sources",
-      "Confidence",
-      "Reasoning",
-      "Suggested Follow-up Questions",
-      "ಉದ್ದೇಶ",
-      "ಆಯ್ಕೆ ಮಾಡಿದ ಘಟಕ",
-      "ಮೂಲ ದಾಖಲೆ",
-      "ವಿಶ್ವಾಸ",
-      "ಕಾರಣ",
-      "ಮುಂದಿನ ಪ್ರಶ್ನೆಗಳು",
-    ];
-    const metaHtml = metaOrder
-      .filter((label) => sections[label])
-      .map((label) => `
-        <div class="assistant-section-row">
-          <b>${escapeHtml(label)}</b>
-          <span>${escapeHtml(sections[label]).replaceAll("\n", "<br>")}</span>
-        </div>
-      `)
-      .join("");
-    return `
-      <article class="intelligence-answer-card">
-        <header>
-          <span class="assistant-orb small"><i data-lucide="${assistantIntentIcon(sections)}"></i></span>
-          <div>
-            <p>${escapeHtml(sections.Intent || sections["à²‰à²¦à³à²¦à³‡à²¶"] || "Crime Intelligence")}</p>
-            <h3>${escapeHtml(sections["Selected Module"] || sections["à²†à²¯à³à²•à³† à²®à²¾à²¡à²¿à²¦ à²˜à²Ÿà²•"] || intelligence?.selected_module || "Evidence-bound answer")}</h3>
-          </div>
-          ${sections.Confidence || intelligence?.confidence ? `<b>${escapeHtml(sections.Confidence || intelligence.confidence)}</b>` : ""}
-        </header>
-        <div class="assistant-direct-answer">${escapeHtml(directAnswer).replaceAll("\n", "<br>")}</div>
-        ${renderAssistantCardPreview(sections, intelligence)}
-        ${renderAssistantCardActions(sections, intelligence)}
-      </article>
-      ${metaHtml ? `
-        <details class="assistant-response-details">
-          <summary>${escapeHtml(t("answerSupport"))}</summary>
-          <div>${metaHtml}</div>
-        </details>
-      ` : ""}
-    `;
-  }
-  const paragraphs = String(content ?? "")
-    .split(/\n{2,}/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (!paragraphs.length) return "<p></p>";
-  const plainChat =
-    intelligence?.presentation?.render_evidence === false &&
-    intelligence?.presentation?.render_actions === false;
-  if (plainChat) {
-    return paragraphs.map((part) => `<p>${escapeHtml(part).replaceAll("\n", "<br>")}</p>`).join("");
-  }
-  return `
-    <article class="intelligence-answer-card simple-card">
-      <header>
-        <span class="assistant-orb small"><i data-lucide="shield-check"></i></span>
-        <div>
-          <p>KSP AI</p>
-          <h3>Crime intelligence response</h3>
-        </div>
-      </header>
-      ${paragraphs.map((part) => `<p>${escapeHtml(part).replaceAll("\n", "<br>")}</p>`).join("")}
-      ${renderAssistantCardActions(sections, intelligence)}
-    </article>
-  `;
 }
 
 function assistantIntentIcon(sections) {
@@ -5385,3 +5825,106 @@ function debounce(fn, wait) {
 }
 
 document.addEventListener("DOMContentLoaded", boot);
+
+async function initCrimeLogger() {
+  const form = document.getElementById("crimeLogForm");
+  const select = document.getElementById("chargeSheetSections");
+  
+  if (!form || !select) return;
+
+  try {
+    const sections = await api("/penal-codes");
+    select.innerHTML = "";
+    sections.forEach(sec => {
+      const option = document.createElement("option");
+      option.value = sec.section;
+      option.textContent = `${sec.code_type} ${sec.section} - ${sec.description}`;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Failed to load penal codes", error);
+  }
+
+  const autoFillBtn = document.getElementById("autoFillCrimeLogBtn");
+  if (autoFillBtn) {
+    autoFillBtn.addEventListener("click", () => {
+      const fieldData = {
+        "crime_type": "Financial Fraud",
+        "accused_name": "Ramesh Singh",
+        "accused_aadhaar": "123456789012",
+        "accused_age": "45",
+        "accused_gender": "Male",
+        "witness_a1": "Kiran Kumar",
+        "witness_a2": "Anjali Sharma",
+        "prosecutor_name": "State Prosecutor",
+        "defense_lawyer_name": "R. K. Menon",
+        "bail_type": "Anticipatory",
+        "bail_surety_name": "Suresh Patel"
+      };
+      
+      for (const [key, value] of Object.entries(fieldData)) {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input) input.value = value;
+      }
+      
+      if (select.options.length > 0) {
+        select.options[0].selected = true;
+        if (select.options.length > 1) select.options[1].selected = true;
+      }
+      
+      form.dispatchEvent(new Event("submit"));
+    });
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const status = document.getElementById("crimeLogStatus");
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    status.className = "form-status";
+    status.style.display = "none";
+    submitBtn.disabled = true;
+
+    try {
+      const formData = new FormData(form);
+      const payload = {
+        crime_type: formData.get("crime_type"),
+        accused_name: formData.get("accused_name"),
+        accused_aadhaar: formData.get("accused_aadhaar") || null,
+        accused_age: formData.get("accused_age") ? parseInt(formData.get("accused_age"), 10) : null,
+        accused_gender: formData.get("accused_gender") || null,
+        witness_a1: formData.get("witness_a1") || null,
+        witness_a2: formData.get("witness_a2") || null,
+        witness_a3: formData.get("witness_a3") || null,
+        witness_a4: formData.get("witness_a4") || null,
+        witness_a5: formData.get("witness_a5") || null,
+        prosecutor_name: formData.get("prosecutor_name") || null,
+        defense_lawyer_name: formData.get("defense_lawyer_name") || null,
+        bail_type: formData.get("bail_type") || null,
+        bail_surety_name: formData.get("bail_surety_name") || null,
+        charge_sheet_sections: Array.from(formData.getAll("charge_sheet_sections"))
+      };
+
+      await api("/crime-logs", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      
+      form.reset();
+      status.textContent = "Crime Logged Successfully.";
+      status.className = "form-status success";
+      status.style.display = "block";
+      
+      setTimeout(() => {
+        status.style.display = "none";
+      }, 3000);
+      
+    } catch (error) {
+      status.textContent = error.message || "Failed to log crime.";
+      status.className = "form-status error";
+      status.style.display = "block";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+}

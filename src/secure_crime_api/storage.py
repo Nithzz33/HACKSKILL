@@ -99,6 +99,7 @@ class Database:
                     suspect_name TEXT NOT NULL,
                     suspect_age INTEGER,
                     suspect_gender TEXT,
+                    suspect_aadhaar TEXT,
                     summary TEXT NOT NULL,
                     sensitivity TEXT NOT NULL CHECK (sensitivity IN ('standard', 'restricted')),
                     latitude REAL,
@@ -261,6 +262,36 @@ class Database:
                     grid_lon REAL,
                     imported_at TEXT NOT NULL,
                     UNIQUE (source_system, source_record_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS police_crime_logs (
+                    id TEXT PRIMARY KEY,
+                    crime_type TEXT NOT NULL,
+                    accused_name TEXT NOT NULL,
+                    accused_aadhaar TEXT,
+                    accused_age INTEGER,
+                    accused_gender TEXT,
+                    witness_a1 TEXT,
+                    witness_a2 TEXT,
+                    witness_a3 TEXT,
+                    witness_a4 TEXT,
+                    witness_a5 TEXT,
+                    prosecutor_name TEXT,
+                    defense_lawyer_name TEXT,
+                    bail_type TEXT,
+                    bail_surety_name TEXT,
+                    charge_sheet_sections_json TEXT NOT NULL DEFAULT '[]',
+                    logged_by TEXT NOT NULL REFERENCES users(id),
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS penal_codes (
+                    id TEXT PRIMARY KEY,
+                    code_type TEXT NOT NULL,
+                    section TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    punishment TEXT,
+                    UNIQUE(code_type, section)
                 );
 
                 CREATE TABLE IF NOT EXISTS revoked_tokens (
@@ -611,6 +642,7 @@ class Database:
             self._ensure_column(conn, "cases", "victim_gender", "TEXT")
             self._ensure_column(conn, "cases", "suspect_age", "INTEGER")
             self._ensure_column(conn, "cases", "suspect_gender", "TEXT")
+            self._ensure_column(conn, "cases", "suspect_aadhaar", "TEXT")
             self._ensure_column(conn, "cases", "socio_economic_context", "TEXT")
             self._ensure_column(conn, "cases", "urbanization_context", "TEXT")
             self._ensure_column(conn, "cases", "migration_context", "TEXT")
@@ -619,6 +651,11 @@ class Database:
             self._ensure_column(conn, "cases", "source_system", "TEXT")
             self._ensure_column(conn, "cases", "source_record_id", "TEXT")
             self._ensure_crime_incident_schema(conn)
+            self._ensure_column(conn, "police_crime_logs", "accused_aadhaar", "TEXT")
+            self._ensure_column(conn, "police_crime_logs", "accused_age", "INTEGER")
+            self._ensure_column(conn, "police_crime_logs", "accused_gender", "TEXT")
+            self._ensure_column(conn, "police_crime_logs", "bail_type", "TEXT")
+            self._ensure_column(conn, "police_crime_logs", "bail_surety_name", "TEXT")
         self.rebuild_case_search_index_if_empty()
 
     def _ensure_column(self, conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
@@ -1857,6 +1894,92 @@ class Database:
                     item["detail"] = {}
                 events.append(item)
             return events
+
+    def create_crime_log(self, log_data: dict[str, Any], logged_by: str) -> dict[str, Any]:
+        log_id = str(uuid.uuid4())
+        now = utc_now_iso()
+        sections_json = json.dumps(log_data.get("charge_sheet_sections", []))
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO police_crime_logs (
+                    id, crime_type, accused_name, accused_aadhaar, accused_age, accused_gender,
+                    witness_a1, witness_a2, witness_a3, witness_a4, witness_a5,
+                    prosecutor_name, defense_lawyer_name, bail_type, bail_surety_name,
+                    charge_sheet_sections_json, logged_by, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    log_id,
+                    log_data["crime_type"],
+                    log_data["accused_name"],
+                    log_data.get("accused_aadhaar"),
+                    log_data.get("accused_age"),
+                    log_data.get("accused_gender"),
+                    log_data.get("witness_a1"),
+                    log_data.get("witness_a2"),
+                    log_data.get("witness_a3"),
+                    log_data.get("witness_a4"),
+                    log_data.get("witness_a5"),
+                    log_data.get("prosecutor_name"),
+                    log_data.get("defense_lawyer_name"),
+                    log_data.get("bail_type"),
+                    log_data.get("bail_surety_name"),
+                    sections_json,
+                    logged_by,
+                    now,
+                ),
+            )
+            row = conn.execute("SELECT * FROM police_crime_logs WHERE id = ?", (log_id,)).fetchone()
+            item = dict(row)
+            item["charge_sheet_sections"] = json.loads(item.pop("charge_sheet_sections_json"))
+            return item
+
+    def list_crime_logs(self, limit: int = 100) -> list[dict[str, Any]]:
+        safe_limit = max(1, min(limit, 500))
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT * FROM police_crime_logs
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (safe_limit,),
+            ).fetchall()
+            results = []
+            for row in rows:
+                item = dict(row)
+                item["charge_sheet_sections"] = json.loads(item.pop("charge_sheet_sections_json"))
+                results.append(item)
+            return results
+
+    def list_penal_codes(self) -> list[dict[str, Any]]:
+        with self.connect() as conn:
+            rows = conn.execute("SELECT * FROM penal_codes ORDER BY code_type ASC, section ASC").fetchall()
+            return [dict(row) for row in rows]
+
+    def seed_penal_codes_if_empty(self) -> None:
+        with self.connect() as conn:
+            count = conn.execute("SELECT COUNT(*) as total FROM penal_codes").fetchone()["total"]
+            if count > 0:
+                return
+            
+            # Seed BNS Sections based on FIR 0033/2025 and common ones
+            seed_data = [
+                ("BNS", "115(2)", "Voluntarily causing hurt", "Imprisonment up to 1 year, or fine up to Rs. 10,000, or both"),
+                ("BNS", "118(1)", "Voluntarily causing hurt or grievous hurt by dangerous weapons or means", "Imprisonment up to 3 years, or fine, or both"),
+                ("BNS", "3(5)", "Common intention", "Liable in same manner as if act done by him alone"),
+                ("BNS", "352", "Intentional insult with intent to provoke breach of peace", "Imprisonment up to 2 years, or fine, or both"),
+                ("BNS", "103(1)", "Punishment for murder", "Death or imprisonment for life, and fine"),
+                ("BNS", "303(2)", "Punishment for theft", "Imprisonment up to 3 years, or fine, or both"),
+                ("BNS", "316(2)", "Criminal breach of trust", "Imprisonment up to 5 years, or fine, or both"),
+                ("BNS", "318(4)", "Cheating and dishonestly inducing delivery of property", "Imprisonment up to 7 years, and fine")
+            ]
+            for code_type, section, desc, punishment in seed_data:
+                conn.execute(
+                    "INSERT INTO penal_codes (id, code_type, section, description, punishment) VALUES (?, ?, ?, ?, ?)",
+                    (str(uuid.uuid4()), code_type, section, desc, punishment)
+                )
 
     def iter_audit_logs(self) -> list[dict[str, Any]]:
         with self.connect() as conn:
