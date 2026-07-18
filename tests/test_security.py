@@ -1601,6 +1601,20 @@ def test_super_admin_imports_crime_csv_for_ml_heatmap(client: TestClient, tmp_pa
     assert broad_payload["visible_case_count"] >= 1
     assert broad_payload["query_analysis"]["interpreted_terms"] == []
 
+    forecast_query = client.post(
+        "/intelligence/query",
+        json={"query": "forecast the crime for next 7 days", "include_sources": False},
+        headers=auth(token),
+    )
+    assert forecast_query.status_code == 200
+    forecast_payload = forecast_query.json()
+    assert forecast_payload["intent"] == "proactive_crime_prevention_intelligence"
+    assert forecast_payload["selected_module"] == "MODULE 8: Forecasting"
+    assert forecast_payload["selected_api"] == "GET /forecast/hotspots"
+    assert forecast_payload["visible_case_count"] >= 1
+    assert forecast_payload["query_analysis"]["interpreted_terms"] == []
+    assert "No imported incident records matched" not in forecast_payload["answer"]
+
     launcher_queries = {
         "crime_pattern_discovery": "Run crime pattern discovery across accessible records. Identify repeat clusters by district, crime type, modus operandi, season, and event context. Return evidence FIRs and prevention leads.",
         "criminal_network_analysis": "Run criminal network analysis. Identify linked suspects, victims, locations, accounts, repeat offender groups, bridge nodes, and money-trail relationships from accessible records.",

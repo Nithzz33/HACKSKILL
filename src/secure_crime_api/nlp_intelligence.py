@@ -30,6 +30,7 @@ GENERIC_TERMS = {
     "about",
     "across",
     "advanced",
+    "ahead",
     "analysis",
     "analytics",
     "and",
@@ -43,6 +44,8 @@ GENERIC_TERMS = {
     "criminological",
     "data",
     "database",
+    "day",
+    "days",
     "demographic",
     "demographics",
     "detect",
@@ -54,6 +57,7 @@ GENERIC_TERMS = {
     "find",
     "for",
     "from",
+    "future",
     "hotspot",
     "hotspots",
     "in",
@@ -68,6 +72,7 @@ GENERIC_TERMS = {
     "modus",
     "network",
     "near",
+    "next",
     "nlp",
     "on",
     "pattern",
@@ -80,6 +85,7 @@ GENERIC_TERMS = {
     "socio",
     "state",
     "the",
+    "tomorrow",
     "trend",
     "trends",
     "type",
@@ -165,6 +171,7 @@ GENERIC_TERMS = {
     "safeguard",
     "safeguards",
     "season",
+    "seven",
     "scope",
     "statewide",
     "stored",
@@ -175,9 +182,12 @@ GENERIC_TERMS = {
     "trail",
     "trails",
     "transparent",
+    "upcoming",
     "urbanization",
     "warning",
     "warnings",
+    "week",
+    "weeks",
     "weapon",
     "weapons",
     "with",
@@ -438,6 +448,8 @@ def significant_terms(terms: list[str]) -> list[str]:
     output = []
     for term in terms:
         normalized = CRIME_TERM_SYNONYMS.get(term, term)
+        if normalized.isdigit():
+            continue
         if normalized in GENERIC_TERMS or normalized in TIME_KEYWORDS:
             continue
         if normalized in {"female", "women", "woman", "girl", "male", "men", "man", "boy"}:
