@@ -7,16 +7,16 @@ const STATIC_SLATE_DEMO =
   document.documentElement.dataset.staticDemo === "true";
 const KARNATAKA_CENTER = [14.52, 75.72];
 const PROFILE_PHOTOS = [
-  "/static/assets/profiles/person-01.jpg",
-  "/static/assets/profiles/person-02.png",
-  "/static/assets/profiles/person-03.png",
-  "/static/assets/profiles/person-04.png",
-  "/static/assets/profiles/person-05.png",
-  "/static/assets/profiles/person-06.jpeg",
-  "/static/assets/profiles/person-07.jpeg",
-  "/static/assets/profiles/person-08.jpeg",
-  "/static/assets/profiles/person-09.jpeg",
-  "/static/assets/profiles/person-10.jpg",
+  "assets/profiles/person-01.jpg",
+  "assets/profiles/person-02.png",
+  "assets/profiles/person-03.png",
+  "assets/profiles/person-04.png",
+  "assets/profiles/person-05.png",
+  "assets/profiles/person-06.jpeg",
+  "assets/profiles/person-07.jpeg",
+  "assets/profiles/person-08.jpeg",
+  "assets/profiles/person-09.jpeg",
+  "assets/profiles/person-10.jpg",
 ];
 const PANEL_KEYS = {
   admin: "Administration",
@@ -947,7 +947,7 @@ async function api(path, options = {}) {
 
 async function loadStaticDemoData() {
   if (!staticDemoDataPromise) {
-    staticDemoDataPromise = fetch("/static/demo-data.json").then((response) => {
+    staticDemoDataPromise = fetch("demo-data.json").then((response) => {
       if (!response.ok) throw new Error("Static demo data could not be loaded.");
       return response.json();
     });

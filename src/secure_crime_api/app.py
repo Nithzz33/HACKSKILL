@@ -4112,6 +4112,8 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
     static_dir = Path(__file__).resolve().parent / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
+        app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="root-assets")
+        app.mount("/vendor", StaticFiles(directory=static_dir / "vendor"), name="root-vendor")
 
     @app.middleware("http")
     async def secure_defaults(request: Request, call_next):
@@ -4151,6 +4153,16 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
         if not index_path.exists():
             raise HTTPException(status_code=404, detail="Frontend not built")
         return FileResponse(index_path)
+
+    def frontend_root_asset(asset_name: str):
+        asset_path = static_dir / asset_name
+        if not asset_path.exists():
+            raise HTTPException(status_code=404, detail="Asset not found")
+        return FileResponse(asset_path)
+
+    app.add_api_route("/app.js", lambda: frontend_root_asset("app.js"), include_in_schema=False)
+    app.add_api_route("/styles.css", lambda: frontend_root_asset("styles.css"), include_in_schema=False)
+    app.add_api_route("/demo-data.json", lambda: frontend_root_asset("demo-data.json"), include_in_schema=False)
 
     dashboard_dir = Path.cwd() / "outputs" / "criminal_network"
     dashboard_files = {
