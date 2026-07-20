@@ -109,7 +109,9 @@ If native Python wheels cause deployment issues, use the Dockerfile as an AppSai
 The repository root also contains a Slate-compatible static demo:
 
 - [index.html](C:/Users/saini/OneDrive/Documents/ksp/index.html)
-- [static/demo-data.json](C:/Users/saini/OneDrive/Documents/ksp/static/demo-data.json)
+- [app.js](C:/Users/saini/OneDrive/Documents/ksp/app.js)
+- [styles.css](C:/Users/saini/OneDrive/Documents/ksp/styles.css)
+- [demo-data.json](C:/Users/saini/OneDrive/Documents/ksp/demo-data.json)
 
 This prevents the Slate preview from showing 404 when the project is deployed as a static site. On `*.onslate.in`, the frontend automatically switches to static demo mode, supports evaluator login, populates dashboards from bundled demo records, and answers the chatbot prompt `forecast the crime for next 7 days`.
 
