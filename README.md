@@ -117,6 +117,14 @@ This prevents the Slate preview from showing 404 when the project is deployed as
 
 Use Slate for the quick hackathon preview URL. Use AppSail for the full live FastAPI backend with authentication, persistence, imports, audit writes, and PDF/export APIs.
 
+To connect the Slate frontend to a live AppSail backend, deploy AppSail first and open the Slate URL once with:
+
+```text
+https://YOUR-SLATE-DOMAIN.onslate.in/?apiBase=https://YOUR-APPSAIL-DOMAIN
+```
+
+The browser saves that backend URL in local storage. Set `SECURE_API_CORS_ORIGINS` in AppSail to include the Slate domain, otherwise the browser will block API calls.
+
 ## Official Data
 
 No mock operational records are seeded by the application. Load Karnataka State Police data only from an authorized source using `POST /cases/import`.

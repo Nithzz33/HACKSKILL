@@ -1,10 +1,15 @@
 const storedMapProvider = localStorage.getItem("kspMapProvider");
 const storedLanguage = localStorage.getItem("kspUiLanguage");
 const storedTheme = localStorage.getItem("kspTheme");
+const requestedApiBase = new URLSearchParams(window.location.search).get("apiBase");
+if (requestedApiBase) {
+  localStorage.setItem("kspApiBase", requestedApiBase.replace(/\/+$/, ""));
+}
+const API_BASE = (localStorage.getItem("kspApiBase") || "").replace(/\/+$/, "");
 const STATIC_SLATE_DEMO =
-  window.location.hostname.endsWith(".onslate.in") ||
-  window.location.search.includes("slateDemo=1") ||
-  document.documentElement.dataset.staticDemo === "true";
+  (!API_BASE && window.location.hostname.endsWith(".onslate.in")) ||
+  (!API_BASE && window.location.search.includes("slateDemo=1")) ||
+  (!API_BASE && document.documentElement.dataset.staticDemo === "true");
 const KARNATAKA_CENTER = [14.52, 75.72];
 const PROFILE_PHOTOS = [
   "assets/profiles/person-01.jpg",
@@ -732,6 +737,11 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 let staticDemoDataPromise = null;
 sanitizeSensitiveUrl();
 
+function apiUrl(path) {
+  if (!API_BASE) return path;
+  return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 function t(key, fallback = key) {
   return I18N[state.language]?.[key] || I18N.en[key] || fallback;
 }
@@ -927,7 +937,7 @@ async function api(path, options = {}) {
   };
   if (!isFormData) headers["Content-Type"] = "application/json";
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
-  const response = await fetch(path, { ...options, headers });
+  const response = await fetch(apiUrl(path), { ...options, headers });
   if (response.status === 401) {
     clearSession();
   }
@@ -1536,7 +1546,7 @@ async function checkHealth() {
     return;
   }
   try {
-    const health = await fetch("/health").then((response) => response.json());
+    const health = await fetch(apiUrl("/health")).then((response) => response.json());
     setText("#apiStatus", health.status === "ok" ? t("apiOnline") : t("apiCheck"));
   } catch (_error) {
     setText("#apiStatus", t("apiOffline"));
@@ -1842,7 +1852,7 @@ function fileUploadCard(upload) {
 
 async function downloadFirXml(uploadId) {
   try {
-    const response = await fetch(`/files/uploads/${encodeURIComponent(uploadId)}/fir.xml`, {
+    const response = await fetch(apiUrl(`/files/uploads/${encodeURIComponent(uploadId)}/fir.xml`), {
       headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
     });
     if (!response.ok) throw new Error(response.statusText || "FIR XML download failed");
@@ -1943,7 +1953,7 @@ async function previewFileUpload(uploadId, page = 1) {
     const safePage = Math.max(1, Math.min(Number(page || 1), Number(pageMeta?.page_count || page || 1)));
     renderFilePreviewPages(uploadId, pageMeta, safePage);
     try {
-      const response = await fetch(`/files/uploads/${encodeURIComponent(uploadId)}/render.png?page=${encodeURIComponent(safePage)}`, {
+      const response = await fetch(apiUrl(`/files/uploads/${encodeURIComponent(uploadId)}/render.png?page=${encodeURIComponent(safePage)}`), {
         headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
       });
       if (!response.ok) throw new Error(response.statusText || t("filePreviewFailed"));
@@ -1968,7 +1978,7 @@ async function previewFileUpload(uploadId, page = 1) {
 
   renderFilePreviewPages(uploadId, { page_count: 1, visible_pages: [1] }, 1);
   try {
-    const response = await fetch(`/files/uploads/${encodeURIComponent(uploadId)}/content`, {
+    const response = await fetch(apiUrl(`/files/uploads/${encodeURIComponent(uploadId)}/content`), {
       headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
     });
     if (!response.ok) throw new Error(response.statusText || t("filePreviewFailed"));
@@ -5715,7 +5725,7 @@ async function exportPdf() {
     await createConversation();
   }
   try {
-    const response = await fetch(`/conversations/${state.conversationId}/export.pdf`, {
+    const response = await fetch(apiUrl(`/conversations/${state.conversationId}/export.pdf`), {
       headers: { Authorization: `Bearer ${state.token}` },
     });
     if (!response.ok) throw new Error("PDF export failed");
