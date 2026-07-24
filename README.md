@@ -111,9 +111,8 @@ The repository root also contains a Slate-compatible static demo:
 - [index.html](C:/Users/saini/OneDrive/Documents/ksp/index.html)
 - [app.js](C:/Users/saini/OneDrive/Documents/ksp/app.js)
 - [styles.css](C:/Users/saini/OneDrive/Documents/ksp/styles.css)
-- [demo-data.json](C:/Users/saini/OneDrive/Documents/ksp/demo-data.json)
 
-This prevents the Slate preview from showing 404 when the project is deployed as a static site. On `*.onslate.in`, the frontend automatically switches to static demo mode, supports evaluator login, populates dashboards from bundled demo records, and answers the chatbot prompt `forecast the crime for next 7 days`.
+This prevents the Slate preview from showing 404 when the project is deployed as a static site. The production Slate frontend does not use bundled mock data; connect it to AppSail with `?apiBase=...` so dashboards and chatbot answers come from the backend database.
 
 Use Slate for the quick hackathon preview URL. Use AppSail for the full live FastAPI backend with authentication, persistence, imports, audit writes, and PDF/export APIs.
 
@@ -124,6 +123,14 @@ https://YOUR-SLATE-DOMAIN.onslate.in/?apiBase=https://YOUR-APPSAIL-DOMAIN
 ```
 
 The browser saves that backend URL in local storage. Set `SECURE_API_CORS_ORIGINS` in AppSail to include the Slate domain, otherwise the browser will block API calls.
+
+For the hackathon backend package with the local SQLite database included:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\build_catalyst_appsail.py --include-local-database
+```
+
+Set `SECURE_API_DATABASE_PATH=/tmp/ksp_secure_system.db`, `SECURE_API_BUNDLED_DATABASE_PATH=data/secure_system.db`, and `SECURE_API_DEMO_MODE=false` in AppSail. AppSail copies the bundled real SQLite database to `/tmp` on startup so dashboards and chatbot answers come from local database records rather than seeded demo records.
 
 ## Official Data
 

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     database_path: Path = Path("data/secure_system.db")
+    bundled_database_path: Path | None = None
     jwt_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(64))
     jwt_issuer: str = "secure-crime-api"
     token_ttl_minutes: int = 30

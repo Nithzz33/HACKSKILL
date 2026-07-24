@@ -8,6 +8,7 @@ import io
 import json
 import re
 import secrets
+import shutil
 import sqlite3
 import textwrap
 import uuid
@@ -4081,10 +4082,30 @@ def add_security_middleware(app: FastAPI, settings: Settings) -> None:
         )
 
 
+def prepare_database_path(settings: Settings) -> Path:
+    database_path = Path(settings.database_path)
+    bundled_path = Path(settings.bundled_database_path) if settings.bundled_database_path else None
+    if not bundled_path:
+        return database_path
+
+    if not bundled_path.exists():
+        raise RuntimeError(f"Bundled database not found: {bundled_path}")
+
+    database_path.parent.mkdir(parents=True, exist_ok=True)
+    should_copy = not database_path.exists()
+    if not should_copy:
+        source_stat = bundled_path.stat()
+        target_stat = database_path.stat()
+        should_copy = source_stat.st_size != target_stat.st_size
+    if should_copy:
+        shutil.copy2(bundled_path, database_path)
+    return database_path
+
+
 def create_app(settings: Settings | None = None, database: Database | None = None) -> FastAPI:
     settings = settings or get_settings()
 
-    db = database or Database(Path(settings.database_path))
+    db = database or Database(prepare_database_path(settings))
     db.init_schema()
     db.seed_penal_codes_if_empty()
     if settings.demo_mode:

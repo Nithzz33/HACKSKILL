@@ -2,14 +2,22 @@ const storedMapProvider = localStorage.getItem("kspMapProvider");
 const storedLanguage = localStorage.getItem("kspUiLanguage");
 const storedTheme = localStorage.getItem("kspTheme");
 const requestedApiBase = new URLSearchParams(window.location.search).get("apiBase");
-if (requestedApiBase) {
+const isPlaceholderApiBase = (value) => /YOUR-APPSAIL|YOUR-APPSAIL-BACKEND|example\.com/i.test(value || "");
+if (requestedApiBase && !isPlaceholderApiBase(requestedApiBase)) {
   localStorage.setItem("kspApiBase", requestedApiBase.replace(/\/+$/, ""));
+} else if (requestedApiBase && isPlaceholderApiBase(requestedApiBase)) {
+  localStorage.removeItem("kspApiBase");
 }
-const API_BASE = (localStorage.getItem("kspApiBase") || "").replace(/\/+$/, "");
+const storedApiBase = (localStorage.getItem("kspApiBase") || "").replace(/\/+$/, "");
+if (isPlaceholderApiBase(storedApiBase)) {
+  localStorage.removeItem("kspApiBase");
+}
+const API_BASE = isPlaceholderApiBase(storedApiBase) ? "" : storedApiBase;
+const SLATE_HOSTED = window.location.hostname.endsWith(".onslate.in");
 const STATIC_SLATE_DEMO =
-  (!API_BASE && window.location.hostname.endsWith(".onslate.in")) ||
   (!API_BASE && window.location.search.includes("slateDemo=1")) ||
   (!API_BASE && document.documentElement.dataset.staticDemo === "true");
+const BACKEND_REQUIRED = SLATE_HOSTED && !API_BASE && !STATIC_SLATE_DEMO;
 const KARNATAKA_CENTER = [14.52, 75.72];
 const PROFILE_PHOTOS = [
   "assets/profiles/person-01.jpg",
@@ -931,6 +939,9 @@ async function api(path, options = {}) {
   if (STATIC_SLATE_DEMO) {
     return staticDemoApi(path, options);
   }
+  if (BACKEND_REQUIRED) {
+    throw new Error("Backend not connected. Open the Slate URL with ?apiBase=https://YOUR-APPSAIL-BACKEND-URL after deploying AppSail.");
+  }
   const isFormData = options.body instanceof FormData;
   const headers = {
     ...(options.headers || {}),
@@ -1543,6 +1554,10 @@ async function handleLogout() {
 async function checkHealth() {
   if (STATIC_SLATE_DEMO) {
     setText("#apiStatus", "Slate demo mode");
+    return;
+  }
+  if (BACKEND_REQUIRED) {
+    setText("#apiStatus", "Backend not connected");
     return;
   }
   try {

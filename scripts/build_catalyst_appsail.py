@@ -19,6 +19,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Install Python dependencies into the bundle. Run this on Linux/WSL for Catalyst managed runtime deploys.",
     )
+    parser.add_argument(
+        "--include-local-database",
+        action="store_true",
+        help="Copy the local SQLite database into the bundle for AppSail demos that must use real local records.",
+    )
+    parser.add_argument(
+        "--database-path",
+        type=Path,
+        default=ROOT / "data" / "secure_system.db",
+        help="Local SQLite database to include when --include-local-database is set.",
+    )
     parser.add_argument("--keep", action="store_true", help="Do not remove the existing output directory first.")
     return parser.parse_args()
 
@@ -37,6 +48,14 @@ def main() -> None:
     _copy_file(ROOT / "requirements.txt", dist / "requirements.txt")
     _copy_file(ROOT / "pyproject.toml", dist / "pyproject.toml")
     _copy_tree(ROOT / "src", dist / "src")
+    if args.include_local_database:
+        database_path = args.database_path.resolve()
+        if not database_path.exists():
+            raise SystemExit(f"Local database not found: {database_path}")
+        if not _inside_root(database_path):
+            raise SystemExit(f"Refusing to copy database outside the project workspace: {database_path}")
+        _copy_file(database_path, dist / "data" / "secure_system.db")
+        print(f"Included local database: {database_path}")
 
     if args.install_dependencies:
         subprocess.check_call(
